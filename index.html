@@ -116,6 +116,14 @@ polygon.land{stroke:rgba(0,0,0,.25);stroke-width:.35}
 .hpbar{fill:#5ad16b}
 .dmgn{font-size:4.2px;font-weight:800;text-anchor:middle;fill:#ff8a73;paint-order:stroke;stroke:#000;stroke-width:.8px}
 .uchip.inb{border-color:#b3261e}
+.m-res{font-size:4.2px;text-anchor:middle}
+.qb{font-size:3.6px;font-weight:800;text-anchor:middle;fill:#f2c14e;paint-order:stroke;stroke:#000;stroke-width:.7px}
+.stackn{font-size:3.6px;font-weight:800;fill:#fff;paint-order:stroke;stroke:#000;stroke-width:.8px}
+.eco{gap:6px}.eco .cur{display:inline-flex;align-items:baseline;gap:2px;background:var(--panel2);border-radius:7px;padding:4px 7px;font-size:13px}
+.eco .cur small{color:#7fd38a;font-size:11px}
+.eco>button.chip{margin-left:auto;min-height:34px;padding:5px 10px}
+.brow{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}.brow>span{flex:1}.brow small{color:var(--muted)}
+.brow.off{opacity:.55}.brow .chip{min-height:0;padding:6px 9px;font-size:13px;line-height:1.2}
 .clash{font-size:5px;text-anchor:middle;fill:#fff;paint-order:stroke;stroke:#b3261e;stroke-width:1.4px}
 </style>
 </head>
@@ -186,9 +194,14 @@ const NEUTRALS_PER_PAIR=2;
 const NF=3, MAX_TURNS=50, ORDER_LIMIT=3;
 const PCOL=[{name:'Red',h:4},{name:'Blue',h:214},{name:'Green',h:140}];
 const UNIT={
-  inf:{name:'Infantry',type:'Infantry',short:'Inf',mp:3,aoc:0,str:2,hp:10},
-  arm:{name:'Armoured',type:'Armour',short:'Armd',mp:5,aoc:1,str:4,hp:12}
+  inf:{name:'Infantry',type:'Infantry',short:'Inf',mp:3,aoc:0,str:2,hp:10,cost:{m:8}},
+  arm:{name:'Armoured',type:'Armour',short:'Armd',mp:5,aoc:1,str:4,hp:12,cost:{m:14,s:2,o:2,r:1}}
 };
+// ---- economy settings (stage 3) ----
+const CUR={m:{name:'Money',icon:'💰'},s:{name:'Steel',icon:'⚙'},o:{name:'Oil',icon:'🛢'},r:{name:'Rubber',icon:'🌿'}};
+const RES={fac:{name:'Factory',icon:'🏭',gives:'m',amt:2},oil:{name:'Oil field',icon:'🛢',gives:'o',amt:2},stl:{name:'Mine',icon:'⛏',gives:'s',amt:2},rub:{name:'Rubber plantation',icon:'🌿',gives:'r',amt:2}};
+const CAPITAL_MONEY=1;                    // every country capital also produces this much Money
+const START_RES={m:16,s:2,o:2,r:1};       // each faction's starting stockpile
 // ---- combat settings (stage 2) ----
 const TERRAIN_BONUS=0.5;      // +50% strength: armour on plains; infantry vs armour in mountains or urban
 const DMG_SPREAD=[0.5,1.5];   // each hit deals strength x a random factor in this range (rounded, minimum 1)
@@ -288,6 +301,23 @@ function tryWorld(seed,attempt){
   });
   {const tmp={cells:cells.map(c=>({l:c.c>=0?1:0,nb:c.nb,port:c.port,cap:c.cap}))};const own=cells.map(c=>c.c>=0?C[c.c].f:-2);
    if(encircleOwners(tmp,own,new Set(),[-1]).length)return null}
+  // production and resource hexes. Each faction's own land lacks one resource type;
+  // the two neutral countries beside it have the types its neighbours lack.
+  const RT=['oil','stl','rub'],lack=RT.slice();for(let i=2;i>0;i--){const j=ri(i+1);[lack[i],lack[j]]=[lack[j],lack[i]]}
+  const fit={fac:i=>cells[i].t==='U'?2:cells[i].t==='P'?1:0,oil:i=>cells[i].t==='P'||cells[i].t==='S'?1:0,stl:i=>cells[i].t==='M'?2:0,rub:i=>cells[i].t==='S'?2:cells[i].t==='P'?1:0};
+  const place=(k,type)=>{
+    const opts=k.cells.filter(i=>i!==k.cap&&!cells[i].res);if(!opts.length)return;
+    const others=k.cells.filter(i=>cells[i].res||i===k.cap);let b=-1,bs=-1e9;
+    for(const i of opts){const sp=others.length?Math.min(...others.map(o=>hd(i,o))):3;const sc=fit[type](i)+Math.min(sp,3)*0.6+rnd()*1.2;if(sc>bs){bs=sc;b=i}}
+    cells[b].res=type;
+  };
+  C.forEach((k,id)=>{
+    for(let z=0;z<(k.L?2:1);z++)place(k,'fac');
+    let types;
+    if(k.f>=0){const own=RT.filter(t=>t!==lack[k.f]);types=k.L?own:[own[ri(2)]]}
+    else{const n=neutralIds.indexOf(id),a=Math.floor(n/NEUTRALS_PER_PAIR),b=(a+1)%NF;types=[n%2===0?lack[a]:lack[b]]}
+    types.forEach(t=>place(k,t));
+  });
   // names and label spots
   const used=new Set(), cap=s=>s[0].toUpperCase()+s.slice(1);
   const cName=()=>{for(let z=0;z<80;z++){const n=cap(SYL[ri(SYL.length)]+(rnd()<0.5?SYL[ri(SYL.length)]:'')+CEND[ri(CEND.length)]);if(!used.has(n)){used.add(n);return n}}return 'Country '+used.size};
@@ -299,7 +329,7 @@ function tryWorld(seed,attempt){
   let maxx=0,maxy=0;cells.forEach(c=>{maxx=Math.max(maxx,c.x);maxy=Math.max(maxy,c.y)});
   const hw=S*SQ3/2;
   return{
-    cells:cells.map(c=>({q:c.q,r:c.r,x:c.x,y:c.y,l:c.c>=0?1:0,t:c.t,c:c.c,nb:c.nb,port:c.port,cap:c.cap})),
+    cells:cells.map(c=>{const o={q:c.q,r:c.r,x:c.x,y:c.y,l:c.c>=0?1:0,t:c.t,c:c.c,nb:c.nb,port:c.port,cap:c.cap};if(c.res)o.res=c.res;return o}),
     countries, factions:[0,1,2].map(f=>({cap:C[f].cap})),
     vb:[-hw-2,-S-2,+(maxx+2*hw+4).toFixed(2),maxy+2*S+4]
   };
@@ -322,7 +352,8 @@ function newGame(map,opts){
   }
   return{v:2,id:null,map,players,owner,units,nid,turn:1,maxTurns:MAX_TURNS,phase:'orders',
     orders:players.map(()=>[]),submitted:players.map(()=>false),limit:players.map(()=>ORDER_LIMIT),
-    replay:null,log:[{t:0,f:-1,m:'The war begins.'}],winners:null,cpu,links:[]};
+    replay:null,log:[{t:0,f:-1,m:'The war begins.'}],winners:null,cpu,links:[],
+    res:players.map(()=>({...START_RES})),builds:players.map(()=>[]),cnt:players.map(()=>({inf:3,arm:1})),inc:players.map(()=>null)};
 }
 const landCount=(g,f)=>g.owner.reduce((s,o,i)=>s+(o===f&&g.map.cells[i].l?1:0),0);
 function glog(g,f,m){g.log.push({t:g.turn,f,m});if(g.log.length>250)g.log.splice(0,g.log.length-250)}
@@ -351,9 +382,58 @@ function strVs(M,u,tgt,at){
   return s;
 }
 
+// ================= economy =================
+function ensureEco(g){
+  if(!g.res)g.res=g.players.map(()=>({...START_RES}));
+  if(!g.builds)g.builds=g.players.map(()=>[]);
+  if(!g.inc)g.inc=g.players.map(()=>null);
+  if(!g.cnt)g.cnt=g.players.map((p,f)=>({inf:g.units.filter(u=>u.f===f&&u.t==='inf').length+3,arm:g.units.filter(u=>u.f===f&&u.t==='arm').length+3}));
+}
+const blockaded=(g,port)=>false; // stage 4: an enemy naval unit next to the port
+// hexes connected to faction f's capital over f's own land, with sea hops between f's open ports
+function supplyNet(g,f){
+  const M=g.map,cap=M.factions[f].cap;if(g.owner[cap]!==f)return new Set();
+  const seen=new Set([cap]),q=[cap];let sea=false;
+  while(q.length){
+    const x=q.pop();
+    for(const y of M.cells[x].nb)if(y>=0&&M.cells[y].l&&g.owner[y]===f&&!seen.has(y)){seen.add(y);q.push(y)}
+    if(M.cells[x].port&&!sea&&!blockaded(g,x)){sea=true;M.cells.forEach((c,i)=>{if(c.port&&g.owner[i]===f&&!seen.has(i)&&!blockaded(g,i)){seen.add(i);q.push(i)}})}
+  }
+  return seen;
+}
+// a country's output reaches faction f only if f holds its capital and that capital is connected to f's faction capital
+function incomeOf(g,f,net){
+  const M=g.map,inc={m:0,s:0,o:0,r:0};net=net||supplyNet(g,f);
+  M.cells.forEach((c,i)=>{if(!c.l||g.owner[i]!==f||!net.has(M.countries[c.c].cap))return;if(c.res){const R=RES[c.res];inc[R.gives]+=R.amt}if(c.cap>=0)inc.m+=CAPITAL_MONEY});
+  return inc;
+}
+const canAfford=(res,cost)=>Object.keys(cost).every(k=>(res[k]||0)>=cost[k]);
+const payCost=(res,cost)=>Object.keys(cost).forEach(k=>res[k]-=cost[k]);
+// units can be built at the capital of a country that faction f owns completely, if no enemy unit is on it
+function canBuildAt(g,f,cell){
+  const M=g.map,c=M.cells[cell];if(!c||c.cap<0||g.owner[cell]!==f)return false;
+  if(g.units.some(u=>u.c===cell&&u.f!==f))return false;
+  for(let i=0;i<M.cells.length;i++)if(M.cells[i].l&&M.cells[i].c===c.c&&g.owner[i]!==f)return false;
+  return true;
+}
+function doBuilds(g,built){
+  g.players.forEach((p,f)=>{
+    if(!p.alive)return;const seen=new Set();
+    for(const b of g.builds[f]||[]){
+      if(!b||seen.has(b.c)||!UNIT[b.t])continue;seen.add(b.c);
+      if(!canBuildAt(g,f,b.c)||!canAfford(g.res[f],UNIT[b.t].cost))continue;
+      payCost(g.res[f],UNIT[b.t].cost);
+      const n=++g.cnt[f][b.t],u={id:g.nid++,f,t:b.t,hp:UNIT[b.t].hp,c:b.c,name:`${ord(n)} ${UNIT[b.t].name}`};
+      g.units.push(u);built.push([u.id,u.c,u.f,u.t,u.name,u.hp]);
+      glog(g,f,`🏭 ${p.name} built ${u.name} in ${g.map.countries[g.map.cells[b.c].c].name}`);
+    }
+  });
+}
+
 // ================= carrying out orders =================
 function resolveTurn(g){
   const M=g.map, alive=f=>g.players[f].alive;
+  ensureEco(g);if(!g.nid)g.nid=Math.max(0,...g.units.map(u=>u.id))+1;
   g.units.forEach(u=>{if(u.hp==null)u.hp=maxHp(u)});
   const byId=new Map(g.units.map(u=>[u.id,u]));
   const su=g.units.map(u=>[u.id,u.c,u.f,u.t,u.name,u.hp]), so=g.owner.slice();
@@ -414,6 +494,9 @@ function resolveTurn(g){
   const liveIds=new Set(g.units.map(u=>u.id));
   g.links=[...links].map(k=>k.split('-').map(Number)).filter(([a,b])=>liveIds.has(a)&&liveIds.has(b));
   const end=encircle(g);
+  // new units, then income
+  const built=[];doBuilds(g,built);
+  g.players.forEach((p,f)=>{if(!p.alive){g.res[f]={m:0,s:0,o:0,r:0};g.inc[f]=null;return}const inc=incomeOf(g,f);Object.keys(inc).forEach(k=>g.res[f][k]+=inc[k]);g.inc[f]=inc});
   // turn summary for the log
   const T=g.turn;
   pairs.forEach(([a,b])=>glog(g,a.f,`Battle: ${g.players[a.f].name} ${a.name} engaged ${g.players[b.f].name} ${b.name} near ${M.countries[M.cells[a.c].c].name}`));
@@ -424,9 +507,9 @@ function resolveTurn(g){
     let gain=0,lost=0;g.owner.forEach((o,i)=>{if(!M.cells[i].l)return;if(o===f&&so[i]!==f)gain++;if(so[i]===f&&o!==f)lost++});
     if(gain||lost)glog(g,f,`${g.players[f].name}: +${gain} / −${lost} hexes this turn (now ${landCount(g,f)})`);
   }
-  g.replay={turn:T,su,so,steps,end};
+  g.replay={turn:T,su,so,steps,end,built};
   g.turn++;
-  g.orders=g.players.map(()=>[]);g.submitted=g.players.map(()=>false);
+  g.orders=g.players.map(()=>[]);g.builds=g.players.map(()=>[]);g.submitted=g.players.map(()=>false);
   const al=g.players.map((p,f)=>p.alive?f:-1).filter(f=>f>=0);
   if(g.turn>g.maxTurns||al.length<=1){
     g.phase='over';
@@ -465,7 +548,7 @@ function encircleOwners(M,owner,occupied,sides){
         if(around.size!==1)continue;
         const by=[...around][0]; if(by<0||by===f)continue;
         if(ocean&&comp.some(x=>M.cells[x].port))continue; // an open port keeps the sea route alive (no blockades yet)
-        for(const x of comp){if(M.cells[x].cap>=0)continue;owner[x]=by;fl.push([x,by,f]);changed=true}
+        for(const x of comp){if(M.cells[x].cap>=0||M.cells[x].res)continue;owner[x]=by;fl.push([x,by,f]);changed=true}
       }
     }
   }
@@ -534,7 +617,8 @@ function aiOrders(g,f){
         const isEnemyCap=M.factions.some((F,k)=>F.cap===end&&k!==f&&g.players[k].alive);
         if(foes.length){const odds=fightOdds(u,end,foes);sc+=odds>=1.15?6+(isEnemyCap?30:0):-12}
         else if(isEnemyCap)sc+=60;
-        else if(M.cells[end].cap>=0&&g.owner[end]!==f)sc+=4;
+        else if(M.cells[end].cap>=0&&g.owner[end]!==f)sc+=7;
+        for(const x of p)if(g.owner[x]!==f&&!claimed.has(x)&&M.cells[x].res)sc+=2;
         sc+=3/(1+(front.get(end)||0))+Math.random()*0.7;
         if(!pick||sc>pick.sc)pick={u,p,sc};
       });
@@ -544,17 +628,30 @@ function aiOrders(g,f){
   }
   return orders;
 }
+function aiBuilds(g,f){
+  const M=g.map,bud={...g.res[f]},out=[];
+  const front=new Map(),fq=[];
+  M.cells.forEach((c,i)=>{if(c.l&&g.owner[i]!==f){front.set(i,0);fq.push(i)}});
+  while(fq.length){const x=fq.shift();for(const y of M.cells[x].nb)if(y>=0&&M.cells[y].l&&!front.has(y)){front.set(y,front.get(x)+1);fq.push(y)}}
+  const caps=M.countries.map(k=>k.cap).filter(c=>canBuildAt(g,f,c)).sort((a,b)=>(front.get(a)||0)-(front.get(b)||0));
+  for(const c of caps){
+    const t=canAfford(bud,UNIT.arm.cost)&&Math.random()<0.6?'arm':canAfford(bud,UNIT.inf.cost)?'inf':null;
+    if(!t)continue;payCost(bud,UNIT[t].cost);out.push({c,t});
+  }
+  return out;
+}
 // Fill in computer orders and play out the turn once every human has submitted.
 // If no humans are left alive, the computers play the rest of the game out.
 function advance(g){
   for(let k=0;k<=MAX_TURNS+1&&g.phase==='orders';k++){
     if(!g.players.every((p,f)=>!p.alive||p.ai||g.submitted[f]))return;
-    g.players.forEach((p,f)=>{if(p.alive&&p.ai&&!g.submitted[f]){g.orders[f]=aiOrders(g,f);g.submitted[f]=true}});
+    ensureEco(g);
+    g.players.forEach((p,f)=>{if(p.alive&&p.ai&&!g.submitted[f]){g.orders[f]=aiOrders(g,f);g.builds[f]=aiBuilds(g,f);g.submitted[f]=true}});
     resolveTurn(g);
     if(g.players.some(p=>p.alive&&!p.ai))return;
   }
 }
-if(typeof module!=='undefined')module.exports={genWorld,newGame,resolveTurn,encircle,contactsNow,landCount,hexDist,stepCost,aiOrders,advance,engagedSet,inContact,retreatMp,UNIT,COST,NF};
+if(typeof module!=='undefined')module.exports={supplyNet,incomeOf,canBuildAt,canAfford,ensureEco,RES,START_RES,genWorld,newGame,resolveTurn,encircle,contactsNow,landCount,hexDist,stepCost,aiOrders,advance,engagedSet,inContact,retreatMp,UNIT,COST,NF};
 
 // ================= drawing =================
 const $=id=>document.getElementById(id);
@@ -587,7 +684,7 @@ function buildWorldSVG(svg,map,preview){
   R.own=el('path',{class:'b-own'},svg);
   el('path',{d:pb,class:'b-cty'},svg);el('path',{d:pc,class:'b-coast'},svg);
   const gm=el('g',{class:'marks'},svg);
-  cells.forEach(c=>{if(c.port)el('text',{x:c.x+4.9,y:c.y+6.4,class:'m-port'},gm).textContent='⚓'});
+  cells.forEach(c=>{if(c.port)el('text',{x:c.x+4.9,y:c.y+6.4,class:'m-port'},gm).textContent='⚓';if(c.res)el('text',{x:c.x-4.6,y:c.y+6.6,class:'m-res'},gm).textContent=RES[c.res].icon});
   map.countries.forEach(k=>{const c=cells[k.cap];
     if(map.factions.some(f=>f.cap===k.cap))el('path',{d:starPath(c.x,c.y-5.3,2.9,1.2),class:'m-fcap'},gm);
     else el('circle',{cx:c.x,cy:c.y-5.6,r:1.5,class:'m-cap'},gm);
@@ -613,10 +710,11 @@ function drawUnits(list,selId){
   const by={};list.forEach(u=>(by[u.c]=by[u.c]||[]).push(u));
   const keep=new Set();
   for(const c in by){
-    const arr=by[c].sort((a,b)=>a.f-b.f||a.id-b.id), cell=G.map.cells[c], n=arr.length;
+    const arr=by[c].sort((a,b)=>a.f-b.f||a.id-b.id), cell=G.map.cells[c], n=Math.min(arr.length,3);
     arr.forEach((u,k)=>{
       keep.add(u.id);let g=R.units.get(u.id);if(!g){g=makeToken(u);R.units.set(u.id,g)}
-      const off=n>1?(k-(n-1)/2)*Math.min(3.4,9/n):0;
+      g.style.display=k<3?'':'none';
+      const off=n>1?(Math.min(k,2)-(n-1)/2)*Math.min(3.4,9/n):0;
       g.style.transform=`translate(${(cell.x+off).toFixed(2)}px,${(cell.y+off*0.45).toFixed(2)}px)`;
       g.classList.toggle('sel',u.id===selId);
       const fr=Math.max(0,Math.min(1,(u.hp==null?UNIT[u.t].hp:u.hp)/UNIT[u.t].hp));
@@ -717,7 +815,7 @@ function applyRemote(d,force){
   const prevTurn=G&&G.id===g.id?G.turn:null;
   G=g;REV=d.rev;
   if(mapFor!==GID||!R){R=buildWorldSVG($('map'),G.map,false);mapFor=GID;requestAnimationFrame(fitView)}
-  if(prevTurn!==null&&prevTurn!==G.turn){DRAFT={};UI.sel=null;UI.seg=false;UI.rp=null;stopPlay()}
+  if(prevTurn!==null&&prevTurn!==G.turn){DRAFT={};BLD={};UI.sel=null;UI.seg=false;UI.rp=null;stopPlay()}
   pickAs();render();afterSync();
 }
 function startWatching(){if(unwatch)unwatch();unwatch=B.watch(GID,d=>applyRemote(d,false),()=>setNet('off'))}
@@ -743,6 +841,18 @@ function getDraft(f){
   return DRAFT[f];
 }
 function saveDraft(f){LS.set(dkey(f),getDraft(f))}
+let BLD={};
+function getBuilds(f){
+  if(!BLD[f]){const src=G.submitted[f]?(G.builds&&G.builds[f]):LS.get(dkey(f)+'.b',[]);BLD[f]=(src||[]).filter(b=>b&&UNIT[b.t]&&G.map.cells[b.c]).map(b=>({c:b.c,t:b.t}))}
+  return BLD[f];
+}
+function saveBuilds(f){LS.set(dkey(f)+'.b',getBuilds(f))}
+const costStr=c=>Object.keys(c).map(k=>`${c[k]}${CUR[k].icon}`).join(' ');
+function afterBuilds(f){const left={...((G.res&&G.res[f])||START_RES)};getBuilds(f).forEach(b=>Object.keys(UNIT[b.t].cost).forEach(k=>left[k]-=UNIT[b.t].cost[k]));return left}
+function ecoHTML(f){
+  const st=(G.res&&G.res[f])||START_RES,inc=incomeOf(G,f),left=afterBuilds(f),nb=getBuilds(f).length;
+  return Object.keys(CUR).map(k=>`<span class="cur" title="${CUR[k].name}">${CUR[k].icon}<b>${nb?left[k]:st[k]}</b><small>+${inc[k]}</small></span>`).join('');
+}
 const mpFor=(u,E)=>E.has(u.id)?retreatMp(u.t):UNIT[u.t].mp;
 function planInfo(f){
   const d=getDraft(f),pos={},used={},labels=[],segs=[],E=engagedSet(G);
@@ -787,11 +897,11 @@ function onCellTap(i){
   render();
 }
 async function submitOrders(){
-  const f=UI.as,turn=G.turn,d=getDraft(f).map(x=>x.r?{u:x.u,path:x.path.slice(),r:true}:{u:x.u,path:x.path.slice()});
+  const f=UI.as,turn=G.turn,d=getDraft(f).map(x=>x.r?{u:x.u,path:x.path.slice(),r:true}:{u:x.u,path:x.path.slice()}),bl=getBuilds(f).map(b=>({c:b.c,t:b.t}));
   UI.busy=true;UI.sel=null;UI.seg=false;render();
   const ok=await mutate(g=>{
     if(g.phase!=='orders'||g.turn!==turn||!g.players[f].alive||g.players[f].uid!==ME)return false;
-    g.orders[f]=d;g.submitted[f]=true;
+    g.orders[f]=d;if(!g.builds)g.builds=g.players.map(()=>[]);g.builds[f]=bl;g.submitted[f]=true;
     advance(g);
   });
   UI.busy=false;
@@ -803,7 +913,7 @@ async function editOrders(){
   UI.busy=true;render();
   const ok=await mutate(g=>{if(g.turn!==turn||!g.submitted[f]||g.players[f].uid!==ME)return false;g.submitted[f]=false});
   UI.busy=false;
-  if(ok){saveDraft(f)}else toast('Too late — all orders were already in');
+  if(ok){saveDraft(f);saveBuilds(f)}else toast('Too late — all orders were already in');
   render();
 }
 
@@ -826,7 +936,7 @@ function rpView(){
   const hp=new Map();let dmg=[];
   r.su.forEach(([id,c,f,t,name,h])=>{pos.set(id,c);meta.set(id,{id,f,t,name});hp.set(id,h==null?UNIT[t].hp:h)});
   for(let k=0;k<=Math.min(i,r.steps.length-1);k++){const st=r.steps[k];st.mv.forEach(([u,a,b])=>pos.set(u,b));(st.hp||[]).forEach(([u,h])=>hp.set(u,h));st.fl.forEach(([h,o])=>owner[h]=o);if(k===i){ct=st.ct;dmg=st.dmg||[]}st.gone.forEach(u=>{if(k<i)gone.add(u)})}
-  if(i>=r.steps.length){r.end.forEach(([h,o])=>owner[h]=o);r.steps.forEach(st=>st.gone.forEach(u=>gone.add(u)))}
+  if(i>=r.steps.length){r.end.forEach(([h,o])=>owner[h]=o);r.steps.forEach(st=>st.gone.forEach(u=>gone.add(u)));(r.built||[]).forEach(([id,c,f,t,name,h])=>{pos.set(id,c);meta.set(id,{id,f,t,name});hp.set(id,h)})}
   const units=[];pos.forEach((c,id)=>{if(!gone.has(id))units.push({...meta.get(id),c,hp:hp.get(id)})});
   return{owner,units,ct,pos,meta,dmg};
 }
@@ -839,7 +949,7 @@ function contactPairsAt(v){
 function rpText(v){
   const r=G.replay,i=UI.rp.i,n=r.steps.length,nm=id=>{const m=v.meta.get(id);return m?`${G.players[m.f].name} ${m.name}`:'?'};
   if(i<0)return`Start of turn ${r.turn}. ${n?`${n} step${n>1?'s':''} to play.`:'Nobody moved.'}`;
-  if(i>=n){const k=r.end.length;return k?`End of turn: ${k} encircled hex${k>1?'es':''} changed hands.`:'End of turn.'}
+  if(i>=n){const k=r.end.length,bt=(r.built||[]).map(([id,c,f,t,name])=>`${G.players[f].name} ${name}`);return`End of turn.${k?` ${k} encircled hex${k>1?'es':''} changed hands.`:''}${bt.length?` New units: ${bt.join(', ')}.`:''}`}
   const st=r.steps[i],parts=[];
   st.mv.forEach(([u,a,b])=>parts.push(`${nm(u)} → ${G.map.countries[G.map.cells[b].c].name}`));
   st.ct.forEach(([a,b])=>parts.push(`⚔ Battle: ${nm(a)} vs ${nm(b)}`));
@@ -857,6 +967,9 @@ function act(a,ds){
   switch(a){
     case 'selu':{if(!canPlot())return;const id=+ds.id;if(UI.sel===id){UI.sel=null}else{UI.sel=id;const u=G.units.find(x=>x.id===id);if(u)UI.info=planInfo(UI.as).pos[id]}UI.seg=false;render();return}
     case 'done':UI.sel=null;UI.seg=false;render();return;
+    case 'openBuild':if(G&&UI.as!=null)openBuild();return;
+    case 'build':{if(!canPlot())return;const c=+ds.c,t=ds.t,b=getBuilds(UI.as);if(b.some(x=>x.c===c)||!canAfford(afterBuilds(UI.as),UNIT[t].cost))return;b.push({c,t});saveBuilds(UI.as);openBuild();render();return}
+    case 'unbuild':{if(!canPlot())return;const c=+ds.c;BLD[UI.as]=getBuilds(UI.as).filter(x=>x.c!==c);saveBuilds(UI.as);openBuild();render();return}
     case 'undo':{if(!canPlot())return;const d=getDraft(UI.as),last=d[d.length-1];if(!last)return;last.path.pop();if(!last.path.length)d.pop();const nl=d[d.length-1];UI.seg=!!(nl&&nl.u===UI.sel);saveDraft(UI.as);render();return}
     case 'clear':if(!canPlot())return;getDraft(UI.as).length=0;UI.sel=null;UI.seg=false;saveDraft(UI.as);render();return;
     case 'submit':if(canPlot())submitOrders();return;
@@ -912,6 +1025,7 @@ function render(){
     plan.segs.forEach(pts=>{if(pts.length>1)el('polyline',{points:pts.map(h=>M.cells[h].x+','+M.cells[h].y).join(' '),class:'plan'},R.paths)});
     plan.labels.forEach(([h,n])=>{const c=M.cells[h];const g=el('g',{class:'pnum'},R.paths);el('circle',{cx:c.x+5,cy:c.y-4.2,r:2.3},g);el('text',{x:c.x+5,y:c.y-4.1},g).textContent=n});
   }
+  if(plotting)getBuilds(UI.as).forEach(b=>{const c=M.cells[b.c];el('text',{x:c.x,y:c.y-8.2,class:'qb'},R.paths).textContent='＋'+UNIT[b.t].short});
   // reachable hexes for the selected unit
   let rd='';
   if(plotting&&canPlot()&&UI.sel!=null){const u=G.units.find(x=>x.id===UI.sel);if(u){const end=plan.pos[u.id],rr=reachFrom(u.t,end,mpFor(u,plan.E)-plan.used[u.id]);rr.dist.forEach((v,h)=>{if(h!==end)rd+=`M${hexPts(M.cells[h]).replace(/ /g,'L')}Z`})}}
@@ -922,6 +1036,8 @@ function render(){
   R.fx.innerHTML='';
   const swords=new Set();
   ct.forEach(([a,b])=>{const pa=posOf(a),pb=posOf(b);if(pa==null||pb==null)return;const k=Math.min(pa,pb)+'-'+Math.max(pa,pb);if(swords.has(k))return;swords.add(k);const A=M.cells[pa],Bc=M.cells[pb];el('text',{x:(A.x+Bc.x)/2,y:(A.y+Bc.y)/2+1.6,class:'clash'},R.fx).textContent='⚔'});
+  const stackN={};shown.forEach(u=>stackN[u.c]=(stackN[u.c]||0)+1);
+  Object.entries(stackN).forEach(([c,n])=>{if(n>3){const cc=M.cells[c];el('text',{x:cc.x+5.6,y:cc.y+1.4,class:'stackn'},R.fx).textContent='×'+n}});
   const dmgAt={};dmg.forEach(([a,b,d])=>{const p=posOf(b);if(p==null)return;const k=dmgAt[p]=(dmgAt[p]||0)+1;const c=M.cells[p];el('text',{x:c.x+3,y:c.y-3.5-k*3.4,class:'dmgn'},R.fx).textContent='−'+d});
   renderTop();renderPanel();
 }
@@ -939,6 +1055,7 @@ function infoHTML(){
   const k=G.map.countries[c.c],o=G.owner[i],tags=[];
   if(G.map.factions.some(f=>f.cap===i))tags.push('★ faction capital');else if(c.cap>=0)tags.push('● capital');
   if(c.port)tags.push('⚓ port');
+  if(c.res){const Rz=RES[c.res],net=o>=0?supplyNet(G,o):null,on=net&&net.has(G.map.countries[c.c].cap);tags.push(`${Rz.icon} ${Rz.name} +${Rz.amt}${CUR[Rz.gives].icon}${o>=0?(on?'':' (not producing: its capital isn\'t held or is cut off)'):''}`)}
   const us=G.units.filter(u=>u.c===i).map(u=>`${G.players[u.f].name} ${u.name} (${hpOf(u)}/${UNIT[u.t].hp} HP)`);
   return`<div class="info"><b>${esc(k.name)}</b> · ${TERR[c.t]} (inf ${COST.inf[c.t]} / armd ${COST.arm[c.t]} MP)${tags.length?' · '+tags.join(' · '):''} · ${o>=0?`held by <span style="color:${pcol(o)}">${esc(G.players[o].name)}</span>`:'<span style="color:#b9b3a3">neutral</span>'}${us.length?'<br>'+esc(us.join(', ')):''}</div>`;
 }
@@ -965,6 +1082,7 @@ function renderPanel(){
     if(G.submitted[f]){
       const wait=G.players.map((p,k)=>p.alive&&!G.submitted[k]?k:-1).filter(k=>k>=0);
       h=`${asRow}<div class="msg">✓ Orders in for turn ${G.turn}.</div>
+      <div class="row eco" style="margin-top:2px">${ecoHTML(f)}<button class="chip" data-act="openBuild">🏭 Builds${getBuilds(f).length?` (${getBuilds(f).length})`:''}</button></div>
       <div class="sub">Waiting for ${wait.map(k=>`<b style="color:${pcol(k)}">${esc(G.players[k].name)}</b>${G.players[k].uid?'':' (seat not taken)'}`).join(', ')}. The turn plays out as soon as everyone has submitted.${wait.some(k=>!G.players[k].uid)?' To test on your own, open ☰ Menu → <b>Computer plays open seats</b>.':''}</div>${infoHTML()}
       <div class="row"><button data-act="edit" ${UI.busy?'disabled':''}>Edit my orders</button>${G.replay?'<button data-act="replay">Watch last turn</button>':''}</div>`;
     }else{
@@ -975,7 +1093,9 @@ function renderPanel(){
           :`Moving <b>${esc(selU.name)}</b>: tap a highlighted hex (${UNIT[selU.t].mp-P.used[selU.id]} MP left). Tap <b>Done</b> to switch units.`)
         :`Turn ${G.turn} of ${G.maxTurns}: tap a unit to plot its path. Units without orders stay put${P.E.size&&us.some(u=>P.E.has(u.id))?', and units in battle keep fighting':''}.`;
       const list=d.length?`<div class="ins">${d.map((x,k)=>{const u=us.find(z=>z.id===x.u);return`<span>${k+1}. ${esc(u?u.name:'?')} ${x.r?'↩ retreats':'→'} ${x.path.length} hex${x.path.length>1?'es':''}</span>`}).join('')}</div>`:'';
+      const nb=getBuilds(f).length;
       h=`${asRow}<div class="msg sm">${msg}</div>
+      <div class="row eco" style="margin-top:2px">${ecoHTML(f)}<button class="chip" data-act="openBuild">🏭 Build${nb?` (${nb})`:''}</button></div>
       <div class="uchips">${chips}</div>
       <div class="sub">${P.ordered.size}/${G.limit[f]} units ordered${d.length?` · ${d.reduce((s,x)=>s+x.path.length,0)} steps`:''}</div>${list}${infoHTML()}
       <div class="row">${selU?'<button data-act="done">Done</button>':''}<button data-act="undo" ${d.length?'':'disabled'}>↶ Undo</button><button data-act="clear" ${d.length?'':'disabled'}>Clear</button><button class="primary" data-act="submit" ${UI.busy?'disabled':''}>Submit orders</button></div>`;
@@ -994,6 +1114,20 @@ function openReplayPrompt(){
   ${ev.length?`<div class="log">${ev.map(logLine).join('')}</div>`:'<p class="sub">Nothing much happened.</p>'}
   <div class="row"><button data-act="skipReplay">Skip</button><button class="primary" data-act="replay">▶ Watch replay</button></div></div>`,'','rprompt');
 }
+function openBuild(){
+  const f=UI.as,b=getBuilds(f),edit=canPlot(),left=afterBuilds(f),M=G.map;
+  const caps=M.countries.map((k,id)=>({k,id})).filter(({k})=>G.owner[k.cap]===f);
+  const rows=caps.map(({k})=>{
+    const q=b.find(x=>x.c===k.cap),star=M.factions[f].cap===k.cap?'★ ':'';
+    if(q)return`<div class="brow"><span><b>${star}${esc(k.name)}</b><br><small>Queued: ${UNIT[q.t].type}</small></span>${edit?`<button class="chip" data-act="unbuild" data-c="${k.cap}">✕ Cancel</button>`:''}</div>`;
+    if(!canBuildAt(G,f,k.cap)){const why=G.units.some(u=>u.c===k.cap&&u.f!==f)?'enemy unit on the capital':'you don\'t hold every hex';return`<div class="brow off"><span><b>${star}${esc(k.name)}</b><br><small>Can't build: ${why}</small></span></div>`}
+    return`<div class="brow"><span><b>${star}${esc(k.name)}</b></span>${['inf','arm'].map(t=>`<button class="chip" data-act="build" data-c="${k.cap}" data-t="${t}" ${edit&&canAfford(left,UNIT[t].cost)?'':'disabled'}>＋ ${UNIT[t].type}<br><small>${costStr(UNIT[t].cost)}</small></button>`).join('')}</div>`;
+  }).join('')||'<p class="sub">You don\'t hold any country capitals.</p>';
+  showOverlay(`<div class="sheet"><div class="sh-h"><h2>🏭 Build units</h2><button class="ghost" data-act="closeOv">✕</button></div>
+  <div class="row eco" style="margin-top:4px">${ecoHTML(f)}</div>
+  <p class="sub">Build at the capital of any country you hold completely, one unit per capital per turn. New units appear on the capital at the end of the turn and are paid for before this turn's income arrives. Numbers above show what's left after queued builds, and next turn's income.${edit?'':' Your orders are submitted, so builds are locked.'}</p>
+  ${rows}<div class="row"><button class="primary" data-act="closeOv">Done</button></div></div>`,'','build');
+}
 function openMenu(){
   const pl=G.players.map((p,i)=>`<div class="prow ${p.alive?'':'out'}"><span class="dot" style="background:${pcol(i)}"></span><span class="pn">${esc(p.name)} ${p.uid===ME?'<span class="me">YOU</span>':p.ai?'🤖':p.uid?'':'<span class="rd">(open seat)</span>'}</span><span class="pm">${landCount(G,i)} hexes · ${G.units.filter(u=>u.f===i).length} units</span></div>`).join('');
   const cs=G.map.countries.map(k=>{const held=G.owner[k.cap];return`<div class="crow"><span class="sw" style="background:${pcol(k.f)}"></span><span class="cn">${esc(k.name)}</span><span class="cm">${k.f<0?'neutral':k.L?'large':'small'} · ${k.n} hexes · capital held by</span><span class="dot" style="background:${pcol(held)}"></span></div>`}).join('');
@@ -1002,14 +1136,20 @@ function openMenu(){
   <h3>Players</h3>${pl}
   <div class="row"><button data-act="share">Invite link</button>${open||!mySeats().length?'<button data-act="seats">Pick a seat</button>':''}</div>
   ${open&&G.phase==='orders'?'<div class="row"><button data-act="cpuSeats">🤖 Computer plays open seats</button></div>':''}
+  ${(()=>{const vf=UI.as!=null?UI.as:mySeats()[0];if(vf==null||!G.players[vf].alive)return'';const net=supplyNet(G,vf);
+    const own=G.map.countries.filter(k=>G.owner[k.cap]===vf);
+    return`<h3>Economy — ${esc(G.players[vf].name)}</h3><div class="row eco" style="margin-top:0">${ecoHTML(vf)}</div>
+    ${own.map(k=>{const on=net.has(k.cap);let inc={m:0,s:0,o:0,r:0};G.map.cells.forEach((c,i)=>{if(c.l&&c.c===G.map.cells[k.cap].c&&G.owner[i]===vf&&on){if(c.res){inc[RES[c.res].gives]+=RES[c.res].amt}if(c.cap>=0)inc.m+=CAPITAL_MONEY}});
+      return`<div class="crow"><span class="cn">${esc(k.name)}</span><span class="cm">${on?Object.keys(inc).filter(x=>inc[x]).map(x=>`+${inc[x]}${CUR[x].icon}`).join(' '):'⛔ cut off — no income'}</span></div>`}).join('')}`})()}
   <h3>Map key</h3>
   <table class="key"><tr><th></th><th>Terrain</th><th>Inf MP</th><th>Armd MP</th></tr>
   <tr><td>—</td><td>Plains</td><td>1</td><td>1</td></tr><tr><td>▦</td><td>Urban</td><td>1</td><td>1</td></tr>
   <tr><td>▲</td><td>Mountains</td><td>2</td><td>2</td></tr><tr><td>≈</td><td>Swamp</td><td>2</td><td>3</td></tr></table>
+  <p class="sub">🏭 factory +2💰 · 🛢 oil field +2🛢 · ⛏ mine +2⚙ · 🌿 rubber plantation +2🌿 · every country capital +${CAPITAL_MONEY}💰. A country only produces for you if you hold its capital and it connects to your ★ capital over your own land (or between your ports by sea). Production hexes, like capitals, can't be taken by encirclement.</p>
   <h3>Units &amp; battles</h3>
-  <table class="key"><tr><th></th><th>MP</th><th>Strength</th><th>HP</th><th>Retreat MP</th></tr>
-  <tr><td>✕ Infantry</td><td>${UNIT.inf.mp}</td><td>${UNIT.inf.str}</td><td>${UNIT.inf.hp}</td><td>${retreatMp('inf')}</td></tr>
-  <tr><td>⬭ Armour</td><td>${UNIT.arm.mp}</td><td>${UNIT.arm.str}</td><td>${UNIT.arm.hp}</td><td>${retreatMp('arm')}</td></tr></table>
+  <table class="key"><tr><th></th><th>MP</th><th>Str</th><th>HP</th><th>Retreat</th><th>Cost</th></tr>
+  <tr><td>✕ Infantry</td><td>${UNIT.inf.mp}</td><td>${UNIT.inf.str}</td><td>${UNIT.inf.hp}</td><td>${retreatMp('inf')}</td><td>${costStr(UNIT.inf.cost)}</td></tr>
+  <tr><td>⬭ Armour</td><td>${UNIT.arm.mp}</td><td>${UNIT.arm.str}</td><td>${UNIT.arm.hp}</td><td>${retreatMp('arm')}</td><td>${costStr(UNIT.arm.cost)}</td></tr></table>
   <p class="sub">When enemies make contact, both stop and a battle starts. Every step, each unit in battle hits the weakest enemy it's touching for about its strength (between half and 1½×), and units at 0 HP are destroyed. Armour gets +50% on plains; infantry gets +50% against armour in mountains or urban hexes. While a battle is going, each turn lasts at least ${MIN_BATTLE_STEPS} steps. Units in battle can't move except to retreat (half MP), and retreating units don't hit back. The bar under each unit shows its HP.</p>
   <p class="sub">Infantry ✕ has 3 MP and controls only its own hex. Armour ⬭ has 5 MP and controls its hex plus the hexes around it. Grey land is neutral: no one owns it until a unit moves through. ★ faction capital (lose it and you're out) · ● country capital · ⚓ port · ⚔ battle in progress. On the score bar, ✓ means that player's orders are in, … means they're still planning, and 🤖 is a computer player.</p>
   <h3>Countries</h3>${cs}
@@ -1077,7 +1217,7 @@ function openSetup(){
   <div class="row" style="margin-top:0"><button class="chip ${SU.cpu?'':'on'}" data-act="opp" data-v="friends">👥 Friends</button><button class="chip ${SU.cpu?'on':''}" data-act="opp" data-v="cpu">🤖 Computer</button></div>
   <div class="sub">${SU.cpu?'You play Red; the computer plays Blue and Green and submits its orders as soon as you submit yours.':"You'll play Red. Your two friends pick Blue and Green when they open the link."}</div>
   <svg id="prev" xmlns="${NS}" viewBox="${m.vb.join(' ')}"></svg>
-  <div class="sub center">${land} land hexes · each nation starts with a large home country (★ capital) and two small neighbours, with six neutral countries (grey) in between</div>
+  <div class="sub center">${land} land hexes · each nation starts with a large home country (★ capital) and two small neighbours, with six neutral countries (grey) in between. 🏭🛢⛏🌿 hexes produce resources.</div>
   <div class="row"><button data-act="reroll">🎲 New map</button><button class="primary" data-act="create" id="bCreate">Create game</button></div>
   <div class="row"><button data-act="${G?'closeOv':'home'}">${G?'Back to current game':'Back'}</button></div></div>`,'full','setup');
   buildWorldSVG($('prev'),m,true);
