@@ -9,22 +9,27 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:15px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 body{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden;-webkit-user-select:none;user-select:none}
-#top{padding:8px 10px 7px;background:var(--panel);border-bottom:1px solid var(--line)}
-.tr{display:flex;align-items:center;gap:6px}
-#ti{flex:1;display:flex;align-items:center;gap:8px;min-width:0;white-space:nowrap;overflow:hidden}
-#ti b{overflow:hidden;text-overflow:ellipsis}
-.dot{width:12px;height:12px;border-radius:50%;display:inline-block;flex:none;box-shadow:0 0 0 2px rgba(255,255,255,.15)}
-.dot.empty{background:transparent;box-shadow:inset 0 0 0 1.5px var(--line)}
+#top{padding:7px 10px 7px;background:var(--panel);border-bottom:1px solid var(--line)}
+.tr{display:flex;align-items:center;gap:8px}
+#ti{flex:1;display:flex;align-items:center;gap:6px;min-width:0;white-space:nowrap;overflow:hidden}
 .rd{color:var(--muted);font-size:13px}
-.steps{display:flex;gap:4px;margin-top:7px}
-.steps span{flex:1;text-align:center;font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:3px 0;border-radius:4px;background:var(--panel2);color:var(--muted)}
-.steps span.on{background:var(--accent);color:#1a1300;font-weight:700}
-#mapwrap{flex:1;min-height:0;display:flex;padding:6px}
-#map{width:100%;height:100%;display:block}
-#panel{background:var(--panel);border-top:1px solid var(--line);padding:10px 12px calc(12px + env(safe-area-inset-bottom));min-height:156px}
-.msg{font-size:16px;margin-bottom:4px}
-.msg.big{font-size:20px;text-align:center;padding:8px 0}
+#net{font-size:12px;color:#ffb3a6}
+.scores{display:flex;gap:6px;margin-top:6px}
+.sc{flex:1;display:flex;align-items:center;gap:5px;background:var(--panel2);border-radius:6px;padding:4px 7px;font-size:13px;min-width:0;white-space:nowrap;overflow:hidden}
+.sc i{width:10px;height:10px;border-radius:2px;flex:none}
+.sc b{margin-left:auto}
+.sc em{font-style:normal;color:var(--muted);min-width:10px;text-align:center}
+.sc.as{box-shadow:inset 0 0 0 1.5px var(--accent)}
+.sc.out{opacity:.45}
+#mapwrap{flex:1;min-height:0;position:relative;background:#10283d}
+#map{width:100%;height:100%;display:block;touch-action:none}
+.mapctl{position:absolute;right:8px;top:8px;display:flex;flex-direction:column;gap:6px}
+.mapctl button{width:40px;height:40px;min-height:0;padding:0;border-radius:10px;font-size:20px;background:rgba(21,30,40,.85)}
+#panel{background:var(--panel);border-top:1px solid var(--line);padding:9px 12px calc(10px + env(safe-area-inset-bottom));max-height:46vh;overflow:auto}
+.msg{font-size:16px;margin-bottom:4px}.msg.sm{font-size:14.5px}
+.msg.big{font-size:19px;text-align:center;padding:6px 0}
 .sub{color:var(--muted);font-size:13px;margin:2px 0 4px}
+.info{font-size:12.5px;color:#c9d4df;background:var(--panel2);border-radius:8px;padding:6px 9px;margin-top:6px}
 .row{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap}
 .row>button{flex:1}
 .lbl{color:var(--muted);font-size:13px;margin-right:2px}
@@ -32,20 +37,21 @@ button{font:inherit;color:var(--text);background:var(--panel2);border:1px solid 
 button:disabled{opacity:.38}
 button.primary{background:var(--accent);color:#1a1300;border-color:transparent;font-weight:700}
 button.danger{background:var(--danger);color:#fff;border-color:transparent;font-weight:700}
-button.ghost{background:transparent;border-color:transparent;min-height:40px;padding:6px 10px;font-size:17px}
+button.ghost{background:transparent;border-color:transparent;min-height:40px;padding:6px 10px;font-size:18px}
 .row>button.chip{flex:0 0 auto;min-width:50px;padding:8px 12px;min-height:40px}
 button.chip.on{background:#fff;color:#111;font-weight:700;border-color:#fff}
-.warn{background:rgba(217,83,63,.15);border:1px solid rgba(217,83,63,.5);color:#ffb3a6;padding:8px 10px;border-radius:8px;font-size:13px;margin-top:8px}
-.vs{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.vs span{flex:1}.vs span:last-child{text-align:right}
-.vs .sw{flex:0;color:var(--accent);font-size:20px}
-.dice{display:flex;gap:6px;align-items:center;margin:6px 0 2px}
-.die{width:30px;height:30px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;font-weight:800}
-.die.att{background:var(--danger);color:#fff}.die.def{background:#eef1f4;color:#111}
-.dice .v{color:var(--muted);font-size:12px;margin:0 4px}
-.slider input{flex:1;accent-color:var(--accent);height:34px}
-.slider b{min-width:36px;text-align:center;font-size:22px}
-#toast{position:fixed;left:50%;top:86px;transform:translate(-50%,-8px);background:rgba(0,0,0,.82);color:#fff;padding:8px 14px;border-radius:20px;font-size:14px;opacity:0;transition:.18s;pointer-events:none;z-index:30;max-width:90vw;text-align:center}
+.chip .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px}
+.uchips{display:flex;gap:6px;overflow-x:auto;padding:4px 0 2px;margin:2px -2px 0}
+.uchip{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:6px 10px;min-height:0;font-size:13px;border-radius:9px}
+.uchip small{color:var(--muted);font-size:11px}
+.uchip .usy{font-size:11px;opacity:.7}
+.uchip.ord{border-color:#7f6a2a}
+.uchip.on{background:var(--accent);color:#1a1300;border-color:var(--accent)}
+.uchip.on small{color:#4a3b06}
+.ins{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:12.5px;color:#d6dee6}
+.rp button{font-size:17px}
+.rpt{color:#d6dee6;min-height:36px}
+#toast{position:fixed;left:50%;top:92px;transform:translate(-50%,-8px);background:rgba(0,0,0,.85);color:#fff;padding:8px 14px;border-radius:20px;font-size:14px;opacity:0;transition:.18s;pointer-events:none;z-index:30;max-width:90vw;text-align:center}
 #toast.show{opacity:1;transform:translate(-50%,0)}
 #overlay{position:fixed;inset:0;background:rgba(5,8,12,.72);z-index:20;display:flex;align-items:flex-end;justify-content:center}
 #overlay.hidden{display:none}
@@ -56,62 +62,67 @@ button.chip.on{background:#fff;color:#111;font-weight:700;border-color:#fff}
 .sh-h h2{margin:0;font-size:19px}
 h3{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:16px 0 6px}
 .crow,.prow{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)}
-.crow .sw{width:14px;height:14px;border-radius:3px;flex:none}
+.crow .sw{width:12px;height:12px;border-radius:3px;flex:none}
 .crow .cn,.prow .pn{flex:1}
-.crow .cm,.prow .pm{color:var(--muted);font-size:13px}
-.crow .cb{font-weight:700;color:var(--accent);min-width:28px;text-align:right}
+.crow .cm,.prow .pm{color:var(--muted);font-size:12.5px}
 .prow.out{opacity:.45;text-decoration:line-through}
-.tog{display:flex;align-items:center;gap:10px;padding:10px 0}
-.tog input{width:20px;height:20px;accent-color:var(--accent)}
-.log{max-height:30vh;overflow:auto}
+.dot{width:12px;height:12px;border-radius:50%;display:inline-block;flex:none;box-shadow:0 0 0 2px rgba(255,255,255,.15)}
+.me{font-size:11px;color:#1a1300;background:var(--accent);border-radius:4px;padding:1px 5px;font-weight:700}
+.log{max-height:34vh;overflow:auto}
 .ll{display:flex;gap:8px;align-items:flex-start;font-size:13px;padding:4px 0}
 .ll .dot{margin-top:3px;width:9px;height:9px}
-.ll .r{color:var(--muted);min-width:24px}
-.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin-top:10px}
-.card{display:flex;flex-direction:column;align-items:center;gap:2px;padding:12px 6px;border-radius:10px;position:relative;min-height:110px}
-.card.on{outline:3px solid var(--accent);background:#2b3a29}
-.card .ci{font-size:28px}
-.card .ck{font-weight:700;font-size:13px}
-.card .ct{color:var(--muted);font-size:12px}
-.card .cown{position:absolute;top:4px;right:6px;font-size:11px;color:var(--accent);font-weight:700}
-.pass{display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:24px;gap:8px;width:100%}
-.pass h1{margin:0;font-size:34px;color:var(--pc)}
-.pass .pr{color:var(--muted);letter-spacing:.15em;text-transform:uppercase;font-size:12px}
-.pass .since{text-align:left;width:100%;max-width:420px;background:var(--panel);border-radius:12px;padding:6px 12px 10px;margin:10px 0;max-height:40vh;overflow:auto}
-.pass button.big{min-width:220px;font-size:18px;padding:14px;margin-top:8px}
+.ll .r{color:var(--muted);min-width:28px}
+table.key{border-collapse:collapse;font-size:13px;width:100%}
+table.key td,table.key th{padding:4px 6px;border-bottom:1px solid var(--line);text-align:left}
+table.key th{color:var(--muted);font-weight:600}
 .setup h1{margin:6px 0 0;font-size:26px;letter-spacing:.14em;color:var(--accent);font-weight:800}
 .setup label.h{display:block;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:14px 0 6px}
 .pname{width:100%;font:inherit;padding:10px 12px;border-radius:8px;border:1px solid var(--line);border-left-width:6px;background:var(--panel2);color:var(--text);margin-bottom:6px;-webkit-user-select:text;user-select:text}
-#prev{width:100%;height:36vh;display:block;margin-top:10px}
-.b-terr{fill:none;stroke:#0b1218;stroke-opacity:.6;stroke-width:.7;pointer-events:none}
-.b-cont{fill:none;stroke:#04070a;stroke-width:2.3;stroke-linecap:round;pointer-events:none}
-.b-coast{fill:none;stroke:#d6e8f5;stroke-opacity:.5;stroke-width:1.1;stroke-linecap:round;pointer-events:none}
-.hl{fill:none;stroke-linecap:round;stroke-linejoin:round;pointer-events:none;stroke-width:0}
-.hl.sel{stroke:#fff;stroke-width:2.6}
-.hl.tgt{stroke:var(--accent);stroke-width:2.6}
-.hl.opt{stroke:var(--accent);stroke-width:1.5;stroke-dasharray:2 1.6;animation:dash .9s linear infinite}
-@keyframes dash{to{stroke-dashoffset:-3.6}}
-.bdg circle{fill:#0c1218;stroke-width:1.3}
-.bdg text{fill:#fff;font-size:6.6px;font-weight:700;text-anchor:middle;dominant-baseline:central;font-family:system-ui,sans-serif}
-.terr{cursor:pointer}
-#net{font-size:12px;color:#ffb3a6}
-.me{font-size:11px;color:#1a1300;background:var(--accent);border-radius:4px;padding:1px 5px;font-weight:700}
+#prev{width:100%;height:42vh;display:block;margin-top:10px;background:#10283d;border-radius:10px}
 .seat{display:flex;align-items:center;gap:10px;width:100%;margin-top:8px;text-align:left;border-left:6px solid var(--pc)}
 .linkbox{width:100%;font:inherit;font-size:14px;padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--text);-webkit-user-select:all;user-select:all}
 .grow{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
 .grow span{flex:1}
-.wait{display:flex;align-items:center;gap:8px}
 .center{text-align:center}
 .fatal{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;padding:30px;width:100%}
 .fatal code{color:var(--muted);font-size:12px;word-break:break-all}
+/* map */
+polygon.sea{fill:#132f48;stroke:#ffffff;stroke-opacity:.04;stroke-width:.5}
+polygon.land{stroke:rgba(0,0,0,.25);stroke-width:.35}
+.g-mtn{fill:none;stroke:rgba(255,255,255,.55);stroke-width:.75;stroke-linejoin:round;pointer-events:none}
+.g-swp{fill:none;stroke:rgba(170,230,210,.55);stroke-width:.65;pointer-events:none}
+.g-urb{fill:rgba(255,255,255,.42);pointer-events:none}
+.b-own{fill:none;stroke:rgba(255,255,255,.55);stroke-width:.55;stroke-dasharray:1.2 1;pointer-events:none}
+.b-cty{fill:none;stroke:#05080b;stroke-width:1.5;stroke-linecap:round;pointer-events:none}
+.b-coast{fill:none;stroke:#cfe6f7;stroke-opacity:.55;stroke-width:.9;stroke-linecap:round;pointer-events:none}
+.marks{pointer-events:none}
+.m-fcap{fill:#f2c14e;stroke:#3a2c00;stroke-width:.4}
+.m-cap{fill:#fff;stroke:#111;stroke-width:.5}
+.m-port{font-size:4.6px;text-anchor:middle;fill:#cfe6f7}
+.clabel{display:none;font-size:3.3px;text-anchor:middle;fill:rgba(255,255,255,.8);font-weight:600;letter-spacing:.04em;paint-order:stroke;stroke:rgba(0,0,0,.6);stroke-width:.7px}
+#map.zoomed .clabel{display:block}
+.reach{fill:rgba(242,193,78,.16);stroke:#f2c14e;stroke-width:.7;pointer-events:none}
+.plans{pointer-events:none}
+.plan{fill:none;stroke:#f2c14e;stroke-width:1.2;stroke-dasharray:2.2 1.4;stroke-linecap:round;stroke-linejoin:round}
+.pnum circle{fill:#f2c14e;stroke:#1a1300;stroke-width:.3}
+.pnum text{font-size:2.9px;font-weight:800;text-anchor:middle;dominant-baseline:central;fill:#1a1300}
+.unitsG{pointer-events:none}
+.unit{transition:transform .45s ease}
+.unit .ub{stroke:#fff;stroke-width:.55}
+.unit.sel .ub{stroke:#f2c14e;stroke-width:1.3}
+.usym{fill:none;stroke:#fff;stroke-width:.6}
+.fx{pointer-events:none}
+.clash{font-size:6.5px;text-anchor:middle;fill:#fff;paint-order:stroke;stroke:#b3261e;stroke-width:1.4px}
 </style>
 </head>
 <body>
 <header id="top">
-  <div class="tr"><div id="ti"></div><span id="net"></span><button id="bCards" class="ghost" data-act="cards"></button><button class="ghost" data-act="menu" aria-label="Menu">☰</button></div>
-  <div class="steps" id="steps"><span>Reinforce</span><span>Attack</span><span>Fortify</span></div>
+  <div class="tr"><div id="ti"></div><span id="net"></span><button class="ghost" data-act="menu" aria-label="Menu">☰</button></div>
+  <div class="scores" id="scores"></div>
 </header>
-<main id="mapwrap"><svg id="map" xmlns="http://www.w3.org/2000/svg"></svg></main>
+<main id="mapwrap"><svg id="map" xmlns="http://www.w3.org/2000/svg"></svg>
+  <div class="mapctl"><button data-act="zin" aria-label="Zoom in">+</button><button data-act="zout" aria-label="Zoom out">−</button><button data-act="zfit" aria-label="Fit map">⤢</button></div>
+</main>
 <section id="panel"></section>
 <div id="toast"></div>
 <div id="overlay" class="hidden"></div>
@@ -165,260 +176,361 @@ window.dispatchEvent(new Event("fbready"));
 'use strict';
 // ================= constants =================
 const S=10, SQ3=Math.sqrt(3), NS='http://www.w3.org/2000/svg';
-const DIRS=[[1,0],[0,1],[-1,1],[-1,0],[0,-1],[1,-1]]; // matches hex edge k (corners k..k+1)
-const PRESETS={
-  S:{cols:9, rows:12,land:70, terrs:18,conts:4,label:'Small'},
-  M:{cols:10,rows:14,land:100,terrs:24,conts:6,label:'Medium'},
-  L:{cols:12,rows:16,land:140,terrs:32,conts:7,label:'Large'}
+const DIRS=[[1,0],[0,1],[-1,1],[-1,0],[0,-1],[1,-1]]; // neighbour k sits across hex edge k (corners k..k+1)
+const GRID={cols:19,rows:21};
+const NF=3, MAX_TURNS=50, ORDER_LIMIT=3;
+const PCOL=[{name:'Red',h:4},{name:'Blue',h:214},{name:'Green',h:140}];
+const UNIT={
+  inf:{name:'Infantry',type:'Infantry',short:'Inf',mp:3,aoc:0},
+  arm:{name:'Armoured',type:'Armour',short:'Armd',mp:5,aoc:1}
 };
-const PCOL=[{name:'Red',h:4},{name:'Blue',h:214},{name:'Green',h:140},{name:'Gold',h:42}];
-const CONT_SHADE=[-7,5,-2,8,-5,2,-9,6];
-const CONT_HUES=[28,190,280,95,330,55,160,240];
-const SYL=['ka','ro','vel','dun','mar','sil','tor','bra','en','ost','gal','ny','hal','ver','ash','kel','mor','ith','lan','zar','fen','dor','qui','sha','bel','tir','ul','gor','ae','ri','cas','vor'];
-const TEND=['','','a','or','en','ia','ar','um','os','eth','mark','fell','ford','vale','holm','ridge'];
-const CEND=['ia','os','ar','and','ica','ea','heim'];
-const CICON={I:'🪖',C:'🐎',A:'💥',W:'★'}, CNAME={I:'Infantry',C:'Cavalry',A:'Artillery',W:'Wild'};
-const PHASES=['reinforce','attack','fortify'];
+// movement points needed to ENTER a hex of each terrain
+const COST={inf:{P:1,U:1,M:2,S:2},arm:{P:1,U:1,M:2,S:3}};
+const TERR={P:'Plains',M:'Mountains',U:'Urban',S:'Swamp'};
+const SYL=['ka','ro','vel','dun','mar','sil','tor','bra','en','ost','gal','ny','hal','ver','ash','kel','mor','ith','lan','zar','fen','dor','sha','bel','tir','ul','gor','ri','cas','vor','pol','stav','kur','lein','mir','tal'];
+const CEND=['ia','os','ar','and','ica','ea','heim','avia','istan','onia','mark','land'];
 
 // ================= helpers =================
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 const newSeed=()=>Math.floor(Math.random()*2147483647);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
-const roll=n=>Array.from({length:n},()=>1+Math.floor(Math.random()*6)).sort((a,b)=>b-a);
-const $=id=>document.getElementById(id);
+const ord=n=>n+(n%100>=11&&n%100<=13?'th':['th','st','nd','rd'][n%10]||'th');
+function hexDist(M,a,b){const A=M.cells[a],B=M.cells[b],dq=A.q-B.q,dr=A.r-B.r;return(Math.abs(dq)+Math.abs(dr)+Math.abs(dq+dr))/2}
+function stepCost(M,u,to){const c=M.cells[to];if(!c||!c.l)return null;return COST[u.t][c.t]}
 
-// ================= map generation =================
-function generateMap(seed,pk){
-  const P=PRESETS[pk], rnd=mulberry32(seed), ri=n=>Math.floor(rnd()*n);
-  const cells=[], idx=new Map(), K=(q,r)=>q*1000+r;
-  for(let row=0;row<P.rows;row++)for(let col=0;col<P.cols;col++){
-    const q=col-((row-(row&1))>>1);
-    idx.set(K(q,row),cells.length);
-    cells.push({q,r:row,col,row,x:+(S*SQ3*(col+0.5*(row&1))).toFixed(2),y:S*1.5*row,w:rnd(),land:false,t:-1,nb:[]});
+// ================= world generation =================
+function genWorld(seed){
+  for(let a=0;a<120;a++){const w=tryWorld(seed,a);if(w){w.seed=seed;return w}}
+  return null;
+}
+function tryWorld(seed,attempt){
+  const rnd=mulberry32((seed+attempt*1000003)>>>0), ri=n=>Math.floor(rnd()*n);
+  const {cols,rows}=GRID, cells=[], idx=new Map(), K=(q,r)=>q*1000+r;
+  for(let row=0;row<rows;row++)for(let col=0;col<cols;col++){
+    const q=col-((row-(row&1))>>1); idx.set(K(q,row),cells.length);
+    cells.push({q,r:row,col,row,x:+(S*SQ3*(col+0.5*(row&1))).toFixed(2),y:S*1.5*row,w:rnd(),m:rnd(),s:rnd(),c:-1,t:'',port:0,cap:-1,nb:null});
   }
-  cells.forEach(c=>{c.nb=DIRS.map(([dq,dr])=>{const j=idx.get(K(c.q+dq,c.r+dr));return j===undefined?-1:j})});
+  cells.forEach(c=>c.nb=DIRS.map(([dq,dr])=>{const j=idx.get(K(c.q+dq,c.r+dr));return j===undefined?-1:j}));
   const NB=i=>cells[i].nb.filter(j=>j>=0);
-  // smooth the random field so land forms lumpy shapes
-  for(let k=0;k<2;k++){const nw=cells.map((c,i)=>{let s=c.w,n=1;for(const j of NB(i)){s+=cells[j].w;n++}return s/n});nw.forEach((v,i)=>cells[i].w=v)}
-  const edge=c=>c.row===0||c.row===P.rows-1||c.col===0||c.col===P.cols-1;
-  const wt=c=>Math.pow(c.w,3)*(edge(c)?0.12:1)+0.002;
-  // grow one connected landmass from the centre
-  const center=Math.floor(P.rows/2)*P.cols+Math.floor(P.cols/2);
-  const front=new Set([center]); let landN=0;
-  while(landN<P.land&&front.size){
-    const arr=[...front]; let tot=0; for(const i of arr)tot+=wt(cells[i]);
-    let x=rnd()*tot, pick=arr[arr.length-1];
-    for(const i of arr){x-=wt(cells[i]);if(x<=0){pick=i;break}}
-    front.delete(pick); cells[pick].land=true; landN++;
-    for(const j of NB(pick))if(!cells[j].land)front.add(j);
-  }
-  const land=cells.map((c,i)=>i).filter(i=>cells[i].land);
+  for(const key of ['w','m','s'])for(let k=0;k<3;k++){const nv=cells.map((c,i)=>{let s=c[key],n=1;for(const j of NB(i)){s+=cells[j][key];n++}return s/n});nv.forEach((v,i)=>cells[i][key]=v)}
+  const edge=c=>c.row<1||c.row>rows-2||c.col<1||c.col>cols-2;
   const hd=(a,b)=>{const A=cells[a],B=cells[b],dq=A.q-B.q,dr=A.r-B.r;return(Math.abs(dq)+Math.abs(dr)+Math.abs(dq+dr))/2};
-  // territory seeds spread apart
-  const seeds=[land[ri(land.length)]];
-  while(seeds.length<P.terrs){
-    let best=-1,bd=-1;
-    for(const i of land){if(seeds.includes(i))continue;let d=Infinity;for(const s of seeds)d=Math.min(d,hd(i,s));d+=rnd()*0.6;if(d>bd){bd=d;best=i}}
-    seeds.push(best);
+  const center=Math.floor(rows/2)*cols+Math.floor(cols/2);
+  const nearest=(x,y)=>{let b=-1,bd=1e9;cells.forEach((c,i)=>{if(edge(c)||c.c>=0)return;const d=(c.x-x)**2+(c.y-y)**2;if(d<bd){bd=d;b=i}});return b};
+  const C=[];
+  const addCountry=(f,L,seedCell,target)=>{const id=C.length;C.push({f,L,target,cells:[seedCell]});cells[seedCell].c=id;return id};
+  // three large home countries arranged in a rough triangle
+  const a0=rnd()*Math.PI*2, Rr=(3.6+rnd()*0.9)*S*SQ3;
+  for(let f=0;f<NF;f++){const a=a0+f*2*Math.PI/3;addCountry(f,1,nearest(cells[center].x+Rr*Math.cos(a),cells[center].y+Rr*Math.sin(a)),15+ri(6))}
+  const frontier=id=>{const s=new Set();for(const i of C[id].cells)for(const j of NB(i))if(cells[j].c<0&&!edge(cells[j]))s.add(j);return[...s]};
+  const grow=(ids,bias)=>{
+    let act=ids.slice();
+    while(act.length){
+      for(const id of act.slice()){
+        const k=C[id]; if(k.cells.length>=k.target){act=act.filter(x=>x!==id);continue}
+        const fr=frontier(id); if(!fr.length)return false;
+        let best=-1,bs=-1e9;
+        for(const j of fr){let sc=NB(j).filter(n=>cells[n].c===id).length*1.1+cells[j].w*2.5+rnd()*0.9;if(bias)sc-=hd(j,center)*0.22;if(sc>bs){bs=sc;best=j}}
+        cells[best].c=id;k.cells.push(best);
+      }
+    }
+    return true;
+  };
+  if(!grow([0,1,2],true))return null;
+  // two small countries attached to each home country
+  for(let f=0;f<NF;f++)for(let k=0;k<2;k++){
+    const fr=frontier(f).filter(j=>NB(j).every(n=>cells[n].c<0||C[cells[n].c].f===f));
+    if(!fr.length)return null;
+    addCountry(f,0,fr[ri(fr.length)],8+ri(5));
   }
-  const tc=seeds.map((s,k)=>{cells[s].t=k;return[s]});
-  let left=land.length-seeds.length;
-  while(left>0){
-    const fr=tc.map((hs,k)=>{const f=new Set();for(const i of hs)for(const j of NB(i))if(cells[j].land&&cells[j].t<0)f.add(j);return[...f]});
-    let bk=-1,bs=Infinity;
-    tc.forEach((hs,k)=>{if(!fr[k].length)return;const s=hs.length+rnd()*0.5;if(s<bs){bs=s;bk=k}});
-    if(bk<0)break;
-    let bj=-1,bsc=-1;
-    for(const j of fr[bk]){const sc=NB(j).filter(n=>cells[n].t===bk).length+rnd()*0.9;if(sc>bsc){bsc=sc;bj=j}}
-    cells[bj].t=bk; tc[bk].push(bj); left--;
-  }
-  cells.forEach(c=>{if(c.land&&c.t<0)c.land=false});
-  const T=tc.length, adj=tc.map(()=>new Set());
-  for(const i of land){const a=cells[i].t;if(a<0)continue;for(const j of NB(i)){const b=cells[j].t;if(cells[j].land&&b>=0&&b!==a)adj[a].add(b)}}
-  // continents: grow groups of territories
-  const bfs=s=>{const d=Array(T).fill(Infinity);d[s]=0;const q=[s];while(q.length){const x=q.shift();for(const y of adj[x])if(d[y]===Infinity){d[y]=d[x]+1;q.push(y)}}return d};
-  const D=[...Array(T).keys()].map(bfs);
-  const cs=[ri(T)];
-  while(cs.length<P.conts){
-    let best=-1,bd=-1;
-    for(let i=0;i<T;i++){if(cs.includes(i))continue;let d=Infinity;for(const s of cs)d=Math.min(d,D[i][s]);d+=rnd()*0.8;if(d>bd){bd=d;best=i}}
-    cs.push(best);
-  }
-  const tcont=Array(T).fill(-1), cm=cs.map((s,k)=>{tcont[s]=k;return[s]}), cw=cs.map(()=>0.7+rnd()*0.6);
-  let tl=T-cs.length;
-  while(tl>0){
-    let bk=-1,bs=Infinity;
-    cm.forEach((m,k)=>{if(!m.some(t=>[...adj[t]].some(u=>tcont[u]<0)))return;const s=(m.length<3?-10+m.length:m.length/cw[k])+rnd()*0.3;if(s<bs){bs=s;bk=k}});
-    if(bk<0)break;
-    let bt=-1,bsc=-1;
-    for(const t of cm[bk])for(const u of adj[t]){if(tcont[u]>=0)continue;const sc=[...adj[u]].filter(v=>tcont[v]===bk).length+rnd();if(sc>bsc){bsc=sc;bt=u}}
-    tcont[bt]=bk; cm[bk].push(bt); tl--;
-  }
-  // fold any one-territory continent into its smallest neighbouring continent
-  for(let k=0;k<cm.length;k++){
-    if(cm[k].length!==1)continue;
-    const t=cm[k][0], nbc=[...new Set([...adj[t]].map(u=>tcont[u]))].filter(c=>c!==k);
-    if(!nbc.length)continue;
-    const into=nbc.sort((a,b)=>cm[a].length-cm[b].length)[0];
-    cm[into].push(t); cm[k]=[];
-  }
-  for(let k=cm.length-1;k>=0;k--)if(!cm[k].length)cm.splice(k,1);
-  cm.forEach((m,k)=>m.forEach(t=>tcont[t]=k));
-  // names
-  const used=new Set(), cap=s=>s[0].toUpperCase()+s.slice(1);
-  const uniq=f=>{for(let k=0;k<60;k++){const n=f();if(!used.has(n)){used.add(n);return n}}const n=f()+' '+(used.size+1);used.add(n);return n};
-  const tName=()=>cap(SYL[ri(SYL.length)]+(rnd()<0.45?SYL[ri(SYL.length)]:'')+TEND[ri(TEND.length)]);
-  const cName=()=>cap(SYL[ri(SYL.length)]+SYL[ri(SYL.length)]+CEND[ri(CEND.length)]);
-  const terrs=tc.map((hs,k)=>{
-    let mx=0,my=0;hs.forEach(i=>{mx+=cells[i].x;my+=cells[i].y});mx/=hs.length;my/=hs.length;
-    let bh=hs[0],bdd=Infinity;hs.forEach(i=>{const d=(cells[i].x-mx)**2+(cells[i].y-my)**2;if(d<bdd){bdd=d;bh=i}});
-    return{name:uniq(tName),cont:tcont[k],hexes:hs,adj:[...adj[k]],bx:cells[bh].x,by:cells[bh].y};
+  if(!grow([3,4,5,6,7,8],false))return null;
+  // enclosed lakes become land of the neighbouring country
+  const ocean=new Set(),st=[];cells.forEach((c,i)=>{if(edge(c)){ocean.add(i);st.push(i)}});
+  while(st.length){const x=st.pop();for(const y of NB(x))if(cells[y].c<0&&!ocean.has(y)){ocean.add(y);st.push(y)}}
+  for(let pass=0;pass<6;pass++){let any=false;cells.forEach((c,i)=>{if(c.c>=0||ocean.has(i))return;const cnt={};NB(i).forEach(n=>{if(cells[n].c>=0)cnt[cells[n].c]=(cnt[cells[n].c]||0)+1});const ks=Object.keys(cnt);if(!ks.length)return;const b=+ks.sort((a,b)=>cnt[b]-cnt[a])[0];c.c=b;C[b].cells.push(i);any=true});if(!any)break}
+  const land=cells.map((c,i)=>i).filter(i=>cells[i].c>=0);
+  // all land must be connected, and every faction must border another faction
+  {const seen=new Set([land[0]]),q=[land[0]];while(q.length){const x=q.pop();for(const y of NB(x))if(cells[y].c>=0&&!seen.has(y)){seen.add(y);q.push(y)}}if(seen.size!==land.length)return null}
+  for(let f=0;f<NF;f++){if(!land.some(i=>C[cells[i].c].f===f&&NB(i).some(j=>cells[j].c>=0&&C[cells[j].c].f!==f)))return null}
+  // terrain
+  land.forEach(i=>cells[i].t='P');
+  land.slice().sort((a,b)=>cells[b].m-cells[a].m).slice(0,Math.round(land.length*0.18)).forEach(i=>cells[i].t='M');
+  land.filter(i=>cells[i].t==='P').sort((a,b)=>cells[b].s-cells[a].s).slice(0,Math.round(land.length*0.12)).forEach(i=>cells[i].t='S');
+  // capitals: the most central hex of each country, made urban
+  C.forEach((k,id)=>{let best=-1,bs=-1e9;for(const i of k.cells){let sc=rnd()*0.8;for(const j of k.cells)if(hd(i,j)<=2)sc++;if(sc>bs){bs=sc;best=i}}k.cap=best;cells[best].t='U';cells[best].cap=id});
+  C.forEach(k=>{const n=k.L?1:(rnd()<0.5?1:0);for(let z=0;z<n;z++){const o=k.cells.filter(i=>cells[i].t==='P'&&hd(i,k.cap)>=2);if(o.length)cells[o[ri(o.length)]].t='U'}});
+  // ports on the coast
+  const isOcean=j=>j>=0&&cells[j].c<0;
+  C.forEach(k=>{
+    const coast=k.cells.filter(i=>cells[i].nb.some(isOcean)); k.ports=[]; if(!coast.length)return;
+    const sc=new Map(coast.map(i=>[i,(cells[i].t==='U'?2:cells[i].t==='P'?1:0)+rnd()]));
+    const p1=coast.slice().sort((a,b)=>sc.get(b)-sc.get(a))[0]; k.ports.push(p1);
+    if(k.L){const far=coast.filter(i=>hd(i,p1)>=4);if(far.length)k.ports.push(far[ri(far.length)])}
+    k.ports.forEach(i=>cells[i].port=1);
   });
-  const conts=cm.map((m,k)=>{const border=m.filter(t=>[...adj[t]].some(u=>tcont[u]!==k)).length;return{name:uniq(cName),terrs:m,bonus:Math.max(1,Math.round(m.length*0.4+border*0.4))}});
+  // names and label spots
+  const used=new Set(), cap=s=>s[0].toUpperCase()+s.slice(1);
+  const cName=()=>{for(let z=0;z<80;z++){const n=cap(SYL[ri(SYL.length)]+(rnd()<0.5?SYL[ri(SYL.length)]:'')+CEND[ri(CEND.length)]);if(!used.has(n)){used.add(n);return n}}return 'Country '+used.size};
+  const countries=C.map(k=>{
+    let mx=0,my=0;k.cells.forEach(i=>{mx+=cells[i].x;my+=cells[i].y});mx/=k.cells.length;my/=k.cells.length;
+    let b=k.cells[0],bd=1e9;k.cells.forEach(i=>{if(i===k.cap)return;const d=(cells[i].x-mx)**2+(cells[i].y-my)**2;if(d<bd){bd=d;b=i}});
+    return{name:cName(),f:k.f,L:k.L,cap:k.cap,n:k.cells.length,lx:cells[b].x,ly:cells[b].y};
+  });
   let maxx=0,maxy=0;cells.forEach(c=>{maxx=Math.max(maxx,c.x);maxy=Math.max(maxy,c.y)});
-  const hw=S*SQ3/2, vb=[-hw-2,-S-2,+(maxx+2*hw+4).toFixed(2),maxy+2*S+4];
-  return{seed,pk,cells:cells.map(c=>({x:c.x,y:c.y,land:c.land,t:c.t,nb:c.nb})),terrs,conts,vb};
+  const hw=S*SQ3/2;
+  return{
+    cells:cells.map(c=>({q:c.q,r:c.r,x:c.x,y:c.y,l:c.c>=0?1:0,t:c.t,c:c.c,nb:c.nb,port:c.port,cap:c.cap})),
+    countries, factions:[0,1,2].map(f=>({cap:C[f].cap})),
+    vb:[-hw-2,-S-2,+(maxx+2*hw+4).toFixed(2),maxy+2*S+4]
+  };
 }
 
-// ================= map drawing =================
+// ================= game setup =================
+function newGame(map){
+  const players=PCOL.map(p=>({name:p.name,h:p.h,uid:null,alive:true}));
+  const owner=map.cells.map(c=>c.l?map.countries[c.c].f:-2);
+  const units=[]; let nid=1;
+  for(let f=0;f<NF;f++){
+    const cap=map.factions[f].cap;
+    const home=map.cells[cap].nb.filter(j=>j>=0&&map.cells[j].l&&map.cells[j].c===f);
+    const spots=[cap,...home.slice(0,3)]; while(spots.length<4)spots.push(cap);
+    units.push({id:nid++,f,t:'inf',c:spots[0],name:'1st Infantry'});
+    units.push({id:nid++,f,t:'inf',c:spots[1],name:'2nd Infantry'});
+    units.push({id:nid++,f,t:'inf',c:spots[2],name:'3rd Infantry'});
+    units.push({id:nid++,f,t:'arm',c:spots[3],name:'1st Armoured'});
+  }
+  return{v:2,id:null,map,players,owner,units,nid,turn:1,maxTurns:MAX_TURNS,phase:'orders',
+    orders:players.map(()=>[]),submitted:players.map(()=>false),limit:players.map(()=>ORDER_LIMIT),
+    replay:null,log:[{t:0,f:-1,m:'The war begins.'}],winners:null};
+}
+const landCount=(g,f)=>g.owner.reduce((s,o,i)=>s+(o===f&&g.map.cells[i].l?1:0),0);
+function glog(g,f,m){g.log.push({t:g.turn,f,m});if(g.log.length>250)g.log.splice(0,g.log.length-250)}
+function contactsNow(g){
+  const out=[];
+  for(let a=0;a<g.units.length;a++)for(let b=a+1;b<g.units.length;b++){
+    const A=g.units[a],B=g.units[b]; if(A.f===B.f)continue;
+    if(hexDist(g.map,A.c,B.c)<=Math.max(UNIT[A.t].aoc,UNIT[B.t].aoc))out.push([A,B]);
+  }
+  return out;
+}
+
+// ================= carrying out orders =================
+function resolveTurn(g){
+  const M=g.map, alive=f=>g.players[f].alive, byId=new Map(g.units.map(u=>[u.id,u]));
+  const su=g.units.map(u=>[u.id,u.c,u.f,u.t,u.name]), so=g.owner.slice();
+  // each faction's queue of single-hex steps, in the order the instructions were entered
+  const q=g.players.map((p,f)=>alive(f)?(g.orders[f]||[]).flatMap(ins=>(ins.path||[]).map(h=>({u:ins.u,to:h}))):[]);
+  const ptr=q.map(()=>0), stopped=new Set(), used={}, steps=[], pairs=new Map();
+  for(let guard=0;guard<600;guard++){
+    let moves=[];
+    for(let f=0;f<q.length;f++){
+      if(!alive(f))continue;
+      while(ptr[f]<q[f].length){
+        const s=q[f][ptr[f]++], u=byId.get(s.u);
+        if(!u||u.f!==f||stopped.has(u.id)||!g.units.includes(u))continue;
+        const cost=stepCost(M,u,s.to);
+        if(cost==null||!M.cells[u.c].nb.includes(s.to)||(used[u.id]||0)+cost>UNIT[u.t].mp){stopped.add(u.id);continue}
+        moves.push({u,from:u.c,to:s.to,cost});break;
+      }
+    }
+    if(!moves.length)break;
+    const st={mv:[],ct:[],fl:[],gone:[],el:[]}, seen=new Set();
+    const touch=(a,b)=>{const k=Math.min(a.id,b.id)+'-'+Math.max(a.id,b.id);stopped.add(a.id);stopped.add(b.id);if(seen.has(k))return;seen.add(k);st.ct.push([a.id,b.id]);if(!pairs.has(k))pairs.set(k,[a,b])};
+    // units of different factions swapping hexes meet head-on: neither moves
+    const blocked=new Set();
+    for(const a of moves)for(const b of moves)if(a!==b&&a.u.f!==b.u.f&&a.from===b.to&&a.to===b.from){blocked.add(a);blocked.add(b);touch(a.u,b.u)}
+    moves=moves.filter(m=>!blocked.has(m));
+    for(const m of moves){m.u.c=m.to;used[m.u.id]=(used[m.u.id]||0)+m.cost;st.mv.push([m.u.id,m.from,m.to])}
+    // contact: within either unit's area of control
+    for(const m of moves)for(const e of g.units){if(e.f!==m.u.f&&hexDist(M,m.u.c,e.c)<=Math.max(UNIT[m.u.t].aoc,UNIT[e.t].aoc))touch(m.u,e)}
+    // a hex entered by units of only one faction becomes theirs
+    for(const m of moves){const h=m.to;const fs=new Set(g.units.filter(x=>x.c===h).map(x=>x.f));if(fs.size===1&&g.owner[h]!==m.u.f){st.fl.push([h,m.u.f,g.owner[h]]);g.owner[h]=m.u.f}}
+    // a faction whose capital has been taken is eliminated
+    for(let f=0;f<NF;f++)if(alive(f)&&g.owner[M.factions[f].cap]!==f)eliminate(g,f,st,byId);
+    steps.push(st);
+    if(g.players.filter(p=>p.alive).length<=1)break;
+  }
+  const end=encircle(g);
+  // turn summary for the log
+  const T=g.turn;
+  pairs.forEach(([a,b])=>glog(g,a.f,`Contact: ${g.players[a.f].name} ${a.name} and ${g.players[b.f].name} ${b.name} near ${M.countries[M.cells[a.c].c].name}`));
+  const gainedBy={};end.forEach(([h,o,p])=>{const k=o+'>'+p;gainedBy[k]=(gainedBy[k]||0)+1});
+  Object.entries(gainedBy).forEach(([k,n])=>{const [o,p]=k.split('>').map(Number);glog(g,o,`${g.players[o].name} encircled ${n} hex${n>1?'es':''} held by ${p>=0?g.players[p].name:'no one'}`)});
+  for(let f=0;f<NF;f++){
+    let gain=0,lost=0;g.owner.forEach((o,i)=>{if(!M.cells[i].l)return;if(o===f&&so[i]!==f)gain++;if(so[i]===f&&o!==f)lost++});
+    if(gain||lost)glog(g,f,`${g.players[f].name}: +${gain} / −${lost} hexes this turn (now ${landCount(g,f)})`);
+  }
+  g.replay={turn:T,su,so,steps,end};
+  g.turn++;
+  g.orders=g.players.map(()=>[]);g.submitted=g.players.map(()=>false);
+  const al=g.players.map((p,f)=>p.alive?f:-1).filter(f=>f>=0);
+  if(g.turn>g.maxTurns||al.length<=1){
+    g.phase='over';
+    const sc=al.map(f=>landCount(g,f)), best=Math.max(...sc);
+    g.winners=al.filter((f,k)=>sc[k]===best);
+    glog(g,-1,g.winners.length>1?`Game over — a tie between ${g.winners.map(f=>g.players[f].name).join(' and ')} with ${best} hexes`:`Game over — ${g.players[g.winners[0]].name} wins with ${best} hexes`);
+  }
+}
+function eliminate(g,f,st,byId){
+  const by=g.owner[g.map.factions[f].cap];
+  g.players[f].alive=false; st.el.push(f);
+  g.owner.forEach((o,i)=>{if(o===f){st.fl.push([i,-1,f]);g.owner[i]=-1}});
+  g.units.filter(u=>u.f===f).forEach(u=>{st.gone.push(u.id);byId.delete(u.id)});
+  g.units=g.units.filter(u=>u.f!==f);
+  glog(g,by,`${by>=0?g.players[by].name:'Someone'} captured ${g.players[f].name}'s capital — ${g.players[f].name} is eliminated`);
+}
+// groups of hexes completely surrounded by one other faction switch to it (except capitals, or if units are inside)
+function encircle(g){
+  const M=g.map, fl=[];
+  for(let pass=0,changed=true;changed&&pass<12;pass++){
+    changed=false;
+    for(let f=0;f<NF;f++){
+      if(!g.players[f].alive)continue;
+      const seen=new Set();
+      for(let i=0;i<M.cells.length;i++){
+        if(!M.cells[i].l||g.owner[i]!==f||seen.has(i))continue;
+        const comp=[],stk=[i];seen.add(i);
+        while(stk.length){const x=stk.pop();comp.push(x);for(const y of M.cells[x].nb)if(y>=0&&M.cells[y].l&&g.owner[y]===f&&!seen.has(y)){seen.add(y);stk.push(y)}}
+        const set=new Set(comp);
+        if(g.units.some(u=>set.has(u.c)))continue;
+        const around=new Set();let ocean=false;
+        for(const x of comp)for(const y of M.cells[x].nb){if(y<0||!M.cells[y].l){ocean=true;continue}if(!set.has(y))around.add(g.owner[y])}
+        if(around.size!==1)continue;
+        const by=[...around][0]; if(by<0||by===f)continue;
+        if(ocean&&comp.some(x=>M.cells[x].port))continue; // an open port keeps the sea route alive (no blockades yet)
+        for(const x of comp){if(M.cells[x].cap>=0)continue;g.owner[x]=by;fl.push([x,by,f]);changed=true}
+      }
+    }
+  }
+  return fl;
+}
+if(typeof module!=='undefined')module.exports={genWorld,newGame,resolveTurn,encircle,contactsNow,landCount,hexDist,stepCost,UNIT,COST,NF};
+
+// ================= drawing =================
+const $=id=>document.getElementById(id);
 function el(tag,attrs,parent){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e}
 function corner(c,k){const a=Math.PI/180*(60*k-30);return[(c.x+S*Math.cos(a)).toFixed(2),(c.y+S*Math.sin(a)).toFixed(2)]}
 const hexPts=c=>[0,1,2,3,4,5].map(k=>corner(c,k).join(',')).join(' ');
-function buildMap(svg,map,preview){
-  svg.innerHTML=''; svg.setAttribute('viewBox',map.vb.join(' '));
-  const cells=map.cells, R={terrG:[],outline:[],badgeC:[],badgeT:[]};
-  el('rect',{x:map.vb[0],y:map.vb[1],width:map.vb[2],height:map.vb[3],fill:'#132d45',rx:4},svg);
-  const sea=el('g',{fill:'none',stroke:'#ffffff','stroke-opacity':'.05','stroke-width':'.6'},svg);
-  cells.forEach(c=>{if(!c.land)el('polygon',{points:hexPts(c)},sea)});
-  const landG=el('g',{},svg);
-  map.terrs.forEach((t,k)=>{const g=el('g',{'data-t':k,class:'terr','stroke-width':'.7'},landG);t.hexes.forEach(i=>el('polygon',{points:hexPts(cells[i])},g));R.terrG.push(g)});
-  let pt='',pc='',ps='';
-  cells.forEach((c,i)=>{if(!c.land)return;for(let d=0;d<6;d++){
-    const j=c.nb[d], seg=`M${corner(c,d)}L${corner(c,(d+1)%6)}`;
-    if(j<0||!cells[j].land)ps+=seg;
-    else if(cells[j].t!==c.t&&i<j){if(map.terrs[c.t].cont!==map.terrs[cells[j].t].cont)pc+=seg;else pt+=seg}
-  }});
-  el('path',{d:pt,class:'b-terr'},svg);el('path',{d:pc,class:'b-cont'},svg);el('path',{d:ps,class:'b-coast'},svg);
-  map.terrs.forEach((t,k)=>{let d='';t.hexes.forEach(i=>{const c=cells[i];for(let e=0;e<6;e++){const j=c.nb[e];if(j<0||cells[j].t!==k)d+=`M${corner(c,e)}L${corner(c,(e+1)%6)}`}});R.outline.push(el('path',{d,class:'hl'},svg))});
-  if(preview){map.terrs.forEach((t,k)=>{R.terrG[k].style.fill=R.terrG[k].style.stroke=contColor(t.cont)});return R}
-  map.terrs.forEach((t,k)=>{const g=el('g',{class:'bdg','data-t':k},svg);R.badgeC.push(el('circle',{cx:t.bx,cy:t.by,r:5.7},g));R.badgeT.push(el('text',{x:t.bx,y:t.by+.3},g))});
+const edgeSeg=(c,k)=>`M${corner(c,k)}L${corner(c,(k+1)%6)}`;
+function starPath(cx,cy,ro,ri){let d='';for(let k=0;k<10;k++){const r=k%2?ri:ro,a=-Math.PI/2+k*Math.PI/5;d+=(k?'L':'M')+(cx+r*Math.cos(a)).toFixed(2)+','+(cy+r*Math.sin(a)).toFixed(2)}return d+'Z'}
+const TSHADE={P:0,M:7,U:3,S:-5};
+const ownerFill=(o,t)=>o===-1?`hsl(45 7% ${34+TSHADE[t]}%)`:`hsl(${PCOL[o].h} 40% ${35+TSHADE[t]}%)`;
+const pcol=f=>f<0?'#9a9484':`hsl(${PCOL[f].h} 72% 58%)`;
+const ucol=f=>`hsl(${PCOL[f].h} 68% 46%)`;
+
+function buildWorldSVG(svg,map,preview){
+  svg.innerHTML='';
+  const cells=map.cells, R={poly:[],units:new Map()};
+  const [vx,vy,vw,vh]=map.vb;
+  el('rect',{x:vx-800,y:vy-800,width:vw+1600,height:vh+1600,fill:'#10283d'},svg);
+  const gC=el('g',{},svg);
+  cells.forEach((c,i)=>{R.poly[i]=el('polygon',{points:hexPts(c),'data-c':i,class:c.l?'land':'sea'},gC)});
+  let mt='',sw='',ub='';
+  cells.forEach(c=>{if(!c.l)return;const x=c.x,y=c.y+1.2;
+    if(c.t==='M')mt+=`M${x-4.4},${y+2.2}L${x-1.7},${y-2.8}L${x+0.9},${y+2.2}M${x-0.5},${y+2.2}L${x+2},${y-1.3}L${x+4.5},${y+2.2}`;
+    else if(c.t==='S')sw+=`M${x-4.2},${y-1.4}q1,-1 2,0t2,0t2,0M${x-1.8},${y+1.2}q1,-1 2,0t2,0t2,0M${x-4.2},${y+3.6}q1,-1 2,0t2,0`;
+    else if(c.t==='U')ub+=`M${x-3.8},${y+2.8}v-3h2.1v3zM${x-1.1},${y+2.8}v-5.2h2.3v5.2zM${x+1.8},${y+2.8}v-2.3h2.1v2.3z`;
+  });
+  el('path',{d:mt,class:'g-mtn'},svg);el('path',{d:sw,class:'g-swp'},svg);el('path',{d:ub,class:'g-urb'},svg);
+  let pb='',pc='';
+  cells.forEach((c,i)=>{if(!c.l)return;for(let k=0;k<6;k++){const j=c.nb[k];if(j<0||!cells[j].l)pc+=edgeSeg(c,k);else if(cells[j].c!==c.c&&i<j)pb+=edgeSeg(c,k)}});
+  R.own=el('path',{class:'b-own'},svg);
+  el('path',{d:pb,class:'b-cty'},svg);el('path',{d:pc,class:'b-coast'},svg);
+  const gm=el('g',{class:'marks'},svg);
+  cells.forEach(c=>{if(c.port)el('text',{x:c.x+4.9,y:c.y+6.4,class:'m-port'},gm).textContent='⚓'});
+  map.countries.forEach(k=>{const c=cells[k.cap];
+    if(map.factions.some(f=>f.cap===k.cap))el('path',{d:starPath(c.x,c.y-5.3,2.9,1.2),class:'m-fcap'},gm);
+    else el('circle',{cx:c.x,cy:c.y-5.6,r:1.5,class:'m-cap'},gm);
+    if(!preview)el('text',{x:k.lx,y:k.ly+8.2,class:'clabel'},gm).textContent=k.name;
+  });
+  R.reach=el('path',{class:'reach'},svg);
+  R.paths=el('g',{class:'plans'},svg);
+  R.unitsG=el('g',{class:'unitsG'},svg);
+  R.fx=el('g',{class:'fx'},svg);
+  if(preview)cells.forEach((c,i)=>{if(c.l)R.poly[i].style.fill=ownerFill(map.countries[c.c].f,c.t)});
   return R;
 }
-const pcol=p=>`hsl(${G.players[p].h} 72% 58%)`;
-const terrColor=(p,c)=>`hsl(${G.players[p].h} 50% ${44+CONT_SHADE[c%8]}%)`;
-const contColor=c=>`hsl(${CONT_HUES[c%8]} 42% 50%)`;
-
-// ================= game state =================
-let G=null, R=null;
-const UI={sel:null,tgt:null,amt:1,dice:3,lastRoll:null,hist:[],showConts:false,csel:[],ov:null,watchOnly:false};
-const SU={np:3,sz:'M',seed:newSeed(),names:['','','',''],map:null};
-const cur=()=>G.players[G.turn];
-const tn=t=>esc(G.map.terrs[t].name);
-function log(m){G.log.push({r:G.round,p:G.turn,m});if(G.log.length>300)G.log.splice(0,G.log.length-300)}
-
-function newGame(map,names){
-  const P=names.length, T=map.terrs.length;
-  const players=names.map((n,i)=>({name:n||PCOL[i].name,h:PCOL[i].h,cards:[],alive:true}));
-  const order=shuffle([...Array(T).keys()]), owner=Array(T), armies=Array(T).fill(1);
-  const first=Math.floor(Math.random()*P);
-  order.forEach((t,i)=>owner[t]=(first+i)%P);
-  const start=Math.floor(T*2.5/P);
-  for(let p=0;p<P;p++){const mine=order.filter(t=>owner[t]===p);let extra=start-mine.length;while(extra-->0)armies[mine[Math.floor(Math.random()*mine.length)]]++}
-  const deck=shuffle([...map.terrs.map((t,i)=>({t:i,k:'ICA'[i%3]})),{t:-1,k:'W'},{t:-1,k:'W'}]);
-  G={v:1,map,players,owner,armies,turn:first,phase:'reinforce',reinforce:0,reinfoNote:'',round:1,conquered:false,pendingMove:null,
-     deck,discard:[],trades:0,log:[],lastSeen:players.map(()=>0),winner:null,ts:null};
-  log(`New game: ${T} territories, ${map.conts.length} continents`);
-  startTurn();
+function makeToken(u){
+  const g=el('g',{class:'unit'},R.unitsG);
+  el('rect',{x:-4.4,y:-3.1,width:8.8,height:6.2,rx:.9,fill:ucol(u.f),class:'ub'},g);
+  if(u.t==='inf')el('path',{d:'M-4.4,-3.1L4.4,3.1M-4.4,3.1L4.4,-3.1',class:'usym'},g);
+  else el('ellipse',{cx:0,cy:0,rx:2.9,ry:1.7,class:'usym'},g);
+  return g;
 }
-function calcReinforce(p){
-  const n=G.owner.filter(o=>o===p).length, base=Math.max(3,Math.floor(n/3)), parts=[`${n} territories → ${base}`];
-  let tot=base;
-  G.map.conts.forEach(c=>{if(c.terrs.every(t=>G.owner[t]===p)){tot+=c.bonus;parts.push(`${c.name} +${c.bonus}`)}});
-  return{tot,note:parts.join(' · ')};
-}
-function startTurn(){
-  const r=calcReinforce(G.turn);
-  G.phase='reinforce';G.reinforce=r.tot;G.reinfoNote=r.note;G.conquered=false;G.pendingMove=null;G.lastAct=null;G.ts={lost:0,killed:0,cap:[]};
-  UI.hist=[];UI.amt=1;clearSel();
-}
-function clearSel(){UI.sel=UI.tgt=null;UI.lastRoll=null}
-const hasEnemyNb=t=>G.map.terrs[t].adj.some(u=>G.owner[u]!==G.owner[t]);
-function reach(from){const p=G.owner[from],seen=new Set([from]),q=[from];while(q.length){const x=q.shift();for(const y of G.map.terrs[x].adj)if(!seen.has(y)&&G.owner[y]===p){seen.add(y);q.push(y)}}seen.delete(from);return seen}
-
-// cards
-function validSet(cs){if(cs.length!==3)return false;if(cs.some(c=>c.k==='W'))return true;const ks=new Set(cs.map(c=>c.k));return ks.size===1||ks.size===3}
-function tradeValue(n){const v=[4,6,8,10,12,15];return n<v.length?v[n]:15+5*(n-5)}
-function trade(idxs){
-  const p=cur(), cs=idxs.map(i=>p.cards[i]);
-  if(G.phase!=='reinforce'||!validSet(cs))return false;
-  const val=tradeValue(G.trades++); G.reinforce+=val;
-  const b=cs.find(c=>c.t>=0&&G.owner[c.t]===G.turn); if(b)G.armies[b.t]+=2;
-  p.cards=p.cards.filter((_,i)=>!idxs.includes(i)); G.discard.push(...cs);
-  log(`${p.name} traded a card set for ${val} armies${b?` (+2 on ${G.map.terrs[b.t].name})`:''}`);
-  return true;
-}
-
-// combat
-function attackOnce(f,t,ad){
-  const dd=Math.min(2,G.armies[t]), a=roll(ad), d=roll(dd); let al=0,dl=0;
-  for(let i=0;i<Math.min(ad,dd);i++){if(a[i]>d[i])dl++;else al++}
-  G.armies[f]-=al;G.armies[t]-=dl;G.ts.lost+=al;G.ts.killed+=dl;
-  UI.lastRoll={a,d,text:''};
-  if(G.armies[t]===0)conquer(f,t,ad);
-}
-function conquer(f,t,ad){
-  const loser=G.owner[t]; G.owner[t]=G.turn; G.conquered=true;
-  G.ts.cap.push(`${G.map.terrs[t].name} (${G.players[loser].name})`);
-  const max=G.armies[f]-1; G.pendingMove={from:f,to:t,min:Math.min(ad,max),max};
-  if(!G.owner.includes(loser)){
-    const L=G.players[loser], n=L.cards.length; L.alive=false; cur().cards.push(...L.cards); L.cards=[];
-    log(`${cur().name} eliminated ${L.name}${n?` and took ${n} card${n>1?'s':''}`:''}!`);
+function drawUnits(list,selId){
+  const by={};list.forEach(u=>(by[u.c]=by[u.c]||[]).push(u));
+  const keep=new Set();
+  for(const c in by){
+    const arr=by[c].sort((a,b)=>a.f-b.f||a.id-b.id), cell=G.map.cells[c], n=arr.length;
+    arr.forEach((u,k)=>{
+      keep.add(u.id);let g=R.units.get(u.id);if(!g){g=makeToken(u);R.units.set(u.id,g)}
+      const off=n>1?(k-(n-1)/2)*Math.min(3.4,9/n):0;
+      g.style.transform=`translate(${(cell.x+off).toFixed(2)}px,${(cell.y+off*0.45).toFixed(2)}px)`;
+      g.classList.toggle('sel',u.id===selId);
+    });
   }
-  if(G.players.filter(p=>p.alive).length===1){
-    G.armies[f]-=max;G.armies[t]=max;G.pendingMove=null;G.phase='over';G.winner=G.turn;
-    log(`${cur().name} conquered the world!`);
-  }
+  for(const [id,g] of R.units)if(!keep.has(id)){g.remove();R.units.delete(id)}
 }
-function doAttack(blitz){
-  const f=UI.sel,t=UI.tgt; if(f==null||t==null||G.armies[f]<2||G.owner[t]===G.turn||G.pendingMove)return;
-  const a0=G.armies[f], d0=G.armies[t];
-  if(blitz){while(G.armies[f]>1&&G.owner[t]!==G.turn)attackOnce(f,t,Math.min(3,G.armies[f]-1))}
-  else attackOnce(f,t,Math.min(UI.dice,G.armies[f]-1));
-  const won=G.owner[t]===G.turn, al=a0-G.armies[f]-(G.phase==='over'&&won?G.armies[t]:0), dl=d0-(won?0:G.armies[t]);
-  UI.lastRoll.text=`${blitz?'Blitz — y':'Y'}ou lost ${al}, they lost ${dl}.${won?' Territory captured!':''}`;
-  G.lastAct={a:UI.lastRoll.a,d:UI.lastRoll.d,text:`${cur().name}${blitz?' blitzed':' attacked'} ${G.map.terrs[t].name} from ${G.map.terrs[f].name}: lost ${al}, destroyed ${dl}${won?' — captured it!':''}`};
-  if(G.pendingMove&&G.pendingMove.min===G.pendingMove.max)confirmMove(G.pendingMove.max);
+
+// ================= map pan & zoom =================
+const VIEW={x:0,y:0,w:100,h:100};
+function mapRect(){return $('map').getBoundingClientRect()}
+function fitView(){
+  if(!G)return;const r=mapRect();if(!r.width)return;
+  const asp=r.width/r.height;
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;G.map.cells.forEach(c=>{if(!c.l)return;x0=Math.min(x0,c.x);y0=Math.min(y0,c.y);x1=Math.max(x1,c.x);y1=Math.max(y1,c.y)});
+  const pad=S*1.6,fx=x0-pad,fy=y0-pad,fw=x1-x0+2*pad,fh=y1-y0+2*pad;
+  let w=fw,h=fw/asp;if(h<fh){h=fh;w=fh*asp}
+  VIEW.w=w;VIEW.h=h;VIEW.x=fx+fw/2-w/2;VIEW.y=fy+fh/2-h/2;applyView();
 }
-function confirmMove(n){
-  const pm=G.pendingMove; if(!pm)return;
-  n=Math.max(pm.min,Math.min(pm.max,n||pm.min));
-  G.armies[pm.from]-=n;G.armies[pm.to]=n;G.pendingMove=null;UI.tgt=null;
-  if(G.armies[pm.from]<2||!hasEnemyNb(pm.from))UI.sel=null;
+function applyView(){
+  if(!G)return;const r=mapRect();if(!r.width)return;
+  const [fx,fy,fw,fh]=G.map.vb, asp=r.width/r.height, maxW=Math.max(fw,fh*asp)*1.25, minW=fw/5;
+  const cx=VIEW.x+VIEW.w/2, cy=VIEW.y+VIEW.h/2;
+  VIEW.w=Math.max(minW,Math.min(maxW,VIEW.w));VIEW.h=VIEW.w/asp;
+  const ncx=Math.max(fx,Math.min(fx+fw,cx)),ncy=Math.max(fy,Math.min(fy+fh,cy));
+  VIEW.x=ncx-VIEW.w/2;VIEW.y=ncy-VIEW.h/2;
+  $('map').setAttribute('viewBox',`${VIEW.x.toFixed(2)} ${VIEW.y.toFixed(2)} ${VIEW.w.toFixed(2)} ${VIEW.h.toFixed(2)}`);
+  $('map').classList.toggle('zoomed',VIEW.w<fw*0.62);
 }
-function fortify(n){
-  const f=UI.sel,t=UI.tgt; if(f==null||t==null||!reach(f).has(t))return;
-  n=Math.max(1,Math.min(G.armies[f]-1,n)); G.armies[f]-=n;G.armies[t]+=n;
-  endTurn();
+function zoomAt(cx,cy,factor){
+  const r=mapRect(),fxr=(cx-r.left)/r.width,fyr=(cy-r.top)/r.height;
+  const ux=VIEW.x+fxr*VIEW.w,uy=VIEW.y+fyr*VIEW.h;
+  VIEW.w*=factor;VIEW.h=VIEW.w*r.height/r.width;VIEW.x=ux-fxr*VIEW.w;VIEW.y=uy-fyr*VIEW.h;applyView();
 }
-function endTurn(){
-  if(G.phase==='over')return;
-  const p=cur(); let got='';
-  if(G.conquered){if(!G.deck.length){G.deck=shuffle(G.discard);G.discard=[]}const c=G.deck.pop();if(c){p.cards.push(c);got=' · earned a card'}}
-  const ts=G.ts;
-  let m=ts.cap.length?`captured ${ts.cap.join(', ')}`:(ts.lost+ts.killed?'attacked but took no territory':'held position');
-  if(ts.lost+ts.killed)m+=` · lost ${ts.lost}, destroyed ${ts.killed}`;
-  log(`${p.name} ${m}${got}`);
-  G.lastSeen[G.turn]=G.log.length;
-  let n=G.turn; do{n=(n+1)%G.players.length}while(!G.players[n].alive);
-  if(n<=G.turn)G.round++;
-  G.turn=n; startTurn(); save(); render(); afterSync();
-}
+(function(){
+  const svg=$('map'),PT=new Map();let drag=null,pinch=null;
+  svg.addEventListener('pointerdown',e=>{
+    try{svg.setPointerCapture(e.pointerId)}catch(_){}
+    PT.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(PT.size===1)drag={x:e.clientX,y:e.clientY,vx:VIEW.x,vy:VIEW.y,moved:false};
+    else if(PT.size===2){const [a,b]=[...PT.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y)||1,w:VIEW.w};if(drag)drag.moved=true}
+  });
+  svg.addEventListener('pointermove',e=>{
+    if(!PT.has(e.pointerId))return;PT.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(PT.size>=2&&pinch){const [a,b]=[...PT.values()];const d=Math.hypot(a.x-b.x,a.y-b.y)||1;zoomAt((a.x+b.x)/2,(a.y+b.y)/2,(pinch.w*pinch.d/d)/VIEW.w)}
+    else if(drag){const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(!drag.moved&&Math.hypot(dx,dy)>8)drag.moved=true;
+      if(drag.moved){const r=mapRect();VIEW.x=drag.vx-dx*VIEW.w/r.width;VIEW.y=drag.vy-dy*VIEW.h/r.height;applyView()}}
+  });
+  const up=e=>{
+    if(!PT.has(e.pointerId))return;PT.delete(e.pointerId);
+    if(PT.size===0){
+      if(drag&&!drag.moved&&e.type==='pointerup'){const t=document.elementFromPoint(e.clientX,e.clientY),c=t&&t.closest&&t.closest('[data-c]');if(c)onCellTap(+c.dataset.c)}
+      drag=null;pinch=null;
+    }else if(PT.size===1){pinch=null;const p=[...PT.values()][0];drag={x:p.x,y:p.y,vx:VIEW.x,vy:VIEW.y,moved:true}}
+  };
+  svg.addEventListener('pointerup',up);svg.addEventListener('pointercancel',up);
+  svg.addEventListener('wheel',e=>{e.preventDefault();zoomAt(e.clientX,e.clientY,e.deltaY>0?1.15:1/1.15)},{passive:false});
+  if(window.ResizeObserver)new ResizeObserver(()=>applyView()).observe($('mapwrap'));
+})();
 
 // ================= online sync =================
 const Q=new URLSearchParams(location.search), MOCK=Q.has('mock');
-let B=null, ME=null, GID=null, REV=-1, unwatch=null, saving=false, dirty=false, lastSent=null, promptKey=null, mapFor=null;
+let G=null,R=null,B=null,ME=null,GID=null,REV=-1,unwatch=null,mapFor=null;
+const UI={ov:null,watchOnly:false,as:null,sel:null,seg:false,info:null,rp:null,busy:false};
+let DRAFT={};
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const SU={seed:newSeed(),map:null};
 
 // Test-only stand-in for Firebase (used when the link has ?mock). Shares games between tabs of one browser.
 const MockBackend={
@@ -430,114 +542,172 @@ const MockBackend={
 };
 
 const mySeats=()=>G?G.players.map((p,i)=>p.uid===ME?i:-1).filter(i=>i>=0):[];
-const myTurn=()=>!!(G&&G.phase!=='over'&&G.players[G.turn].uid===ME);
-const viewSeat=()=>myTurn()?G.turn:(mySeats().length?mySeats()[0]:-1);
 const gameLink=id=>location.origin+location.pathname+'?g='+id+(MOCK?'&mock':'');
 const withTimeout=(p,ms,what)=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error(what+' timed out')),ms))]);
+function setNet(s){$('net').textContent=s==='off'?'⚠ Offline':''}
 
-function setNet(s){$('net').textContent=s==='off'?'⚠ Offline — retrying':s==='saving'?'':''}
-function save(){if(!G||!GID)return;dirty=true;flush()}
-function mergeSeats(g){g.players.forEach((p,i)=>{if(G.players[i]){G.players[i].uid=p.uid;G.players[i].name=p.name}})}
-async function flush(){
-  if(saving||!dirty||!GID)return;
-  saving=true;dirty=false;
-  const base=REV; let wrote=-1;
+async function mutate(fn){
+  if(!B||!GID)return false;
   try{
-    const ok=await B.tx(GID,cur=>{
-      const r=cur?cur.rev:-1;
-      if(cur&&r!==base){try{mergeSeats(JSON.parse(cur.state))}catch(e){}}
-      const st=JSON.stringify(G); lastSent=st; wrote=r+1;
-      return{v:1,rev:r+1,state:st};
-    });
-    if(ok){REV=Math.max(REV,wrote);setNet('ok')}
-  }catch(e){
-    console.error(e);dirty=true;saving=false;setNet('off');setTimeout(flush,4000);return;
-  }
-  saving=false;
-  if(dirty)flush();
+    const ok=await B.tx(GID,cur=>{if(!cur)return null;const g=JSON.parse(cur.state);if(fn(g)===false)return null;return{v:2,rev:cur.rev+1,state:JSON.stringify(g)}});
+    setNet('ok');
+    if(ok){const d=await B.load(GID);applyRemote(d,false)}
+    return ok;
+  }catch(e){console.error(e);setNet('off');toast("Couldn't reach the server — try again");return false}
 }
 function applyRemote(d,force){
   if(!d)return;
-  if(!force){
-    if(d.rev<=REV)return;
-    if(d.state===lastSent){REV=d.rev;return}
-  }
-  let g; try{g=JSON.parse(d.state)}catch(e){return}
-  if(!force&&G&&myTurn()&&g.turn===G.turn&&g.round===G.round&&g.phase!=='over'){
-    // I'm mid-turn: the only outside change allowed is someone joining a seat
-    mergeSeats(g);REV=d.rev;render();afterSync();return;
-  }
+  if(!force&&d.rev<=REV)return;
+  let g;try{g=JSON.parse(d.state)}catch(e){return}
+  if(g.v!==2){showFatal("This game was made with the old Risk-style version, so it can't be opened any more. Start a new game.");return}
+  const prevTurn=G&&G.id===g.id?G.turn:null;
   G=g;REV=d.rev;
-  if(mapFor!==GID||!R){R=buildMap($('map'),G.map,false);mapFor=GID}
-  if(!myTurn()){clearSel();UI.hist=[]}
-  render();afterSync();
+  if(mapFor!==GID||!R){R=buildWorldSVG($('map'),G.map,false);mapFor=GID;requestAnimationFrame(fitView)}
+  if(prevTurn!==null&&prevTurn!==G.turn){DRAFT={};UI.sel=null;UI.seg=false;UI.rp=null;stopPlay()}
+  pickAs();render();afterSync();
 }
-function startWatching(){
-  if(unwatch)unwatch();
-  unwatch=B.watch(GID,d=>applyRemote(d,false),()=>setNet('off'));
-}
+function startWatching(){if(unwatch)unwatch();unwatch=B.watch(GID,d=>applyRemote(d,false),()=>setNet('off'))}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&B&&GID)B.load(GID).then(d=>applyRemote(d,false)).catch(()=>{})});
-
 function rememberGame(id,label){const gs=LS.get('frontline.games',[]).filter(x=>x.id!==id);gs.unshift({id,t:Date.now(),label:label||''});LS.set('frontline.games',gs.slice(0,20))}
+function needsMe(){return G&&G.phase==='orders'&&mySeats().some(f=>G.players[f].alive&&!G.submitted[f])}
 function afterSync(){
   if(!G)return;
-  document.title=(myTurn()?'▶ Your turn · ':'')+'Warsea Conquest';
+  document.title=(needsMe()?'▶ Orders needed · ':'')+'Warsea Conquest';
   if(UI.ov==='seats'){openSeats();return}
   if(UI.ov)return;
   if(!mySeats().length&&!UI.watchOnly&&G.phase!=='over'){openSeats();return}
-  if(myTurn()&&promptKey!==`${G.round}:${G.turn}`)openYourTurn();
+  if(G.replay&&LS.get('wc.seen.'+GID,0)<G.replay.turn&&!UI.rp){openReplayPrompt();return}
+}
+
+// ================= orders (drafts) =================
+const dkey=f=>`wc.d.${GID}.${G.turn}.${f}`;
+function getDraft(f){
+  if(!DRAFT[f]){
+    const src=G.submitted[f]?G.orders[f]:LS.get(dkey(f),[]);
+    DRAFT[f]=(src||[]).filter(x=>x&&x.path&&x.path.length&&G.units.some(u=>u.id===x.u&&u.f===f)).map(x=>({u:x.u,path:x.path.slice()}));
+  }
+  return DRAFT[f];
+}
+function saveDraft(f){LS.set(dkey(f),getDraft(f))}
+function planInfo(f){
+  const d=getDraft(f),pos={},used={},labels=[],segs=[];
+  G.units.filter(u=>u.f===f).forEach(u=>{pos[u.id]=u.c;used[u.id]=0});
+  let n=0;
+  d.forEach(ins=>{const u=G.units.find(x=>x.id===ins.u);const pts=[pos[ins.u]];ins.path.forEach(h=>{used[ins.u]+=COST[u.t][G.map.cells[h].t];labels.push([h,++n]);pts.push(h)});pos[ins.u]=pts[pts.length-1];segs.push(pts)});
+  return{pos,used,labels,segs,ordered:new Set(d.map(x=>x.u))};
+}
+function reachFrom(t,start,mp){
+  const M=G.map,dist=new Map([[start,0]]),prev=new Map(),open=[start];
+  while(open.length){open.sort((a,b)=>dist.get(a)-dist.get(b));const x=open.shift();
+    for(const y of M.cells[x].nb){if(y<0||!M.cells[y].l)continue;const nd=dist.get(x)+COST[t][M.cells[y].t];if(nd<=mp&&(!dist.has(y)||nd<dist.get(y))){dist.set(y,nd);prev.set(y,x);if(!open.includes(y))open.push(y)}}}
+  return{dist,prev};
+}
+function pathTo(rr,start,target){const p=[];let x=target;while(x!==start){p.unshift(x);x=rr.prev.get(x)}return p}
+const canPlot=()=>!!(G&&G.phase==='orders'&&UI.as!=null&&G.players[UI.as].alive&&G.players[UI.as].uid===ME&&!G.submitted[UI.as]&&!UI.rp&&!UI.busy);
+function pickAs(){
+  const s=mySeats().filter(f=>G.players[f].alive);
+  if(UI.as!=null&&s.includes(UI.as)&&!G.submitted[UI.as])return;
+  const open=s.find(f=>!G.submitted[f]);
+  UI.as=open!=null?open:(s.includes(UI.as)?UI.as:(s[0]!=null?s[0]:null));
+}
+function addSteps(f,uid,path){
+  const d=getDraft(f),last=d[d.length-1];
+  if(UI.seg&&last&&last.u===uid)last.path.push(...path);
+  else{const ordered=new Set(d.map(x=>x.u));if(!ordered.has(uid)&&ordered.size>=G.limit[f])return toast(`You can give orders to ${G.limit[f]} units per turn`);d.push({u:uid,path:path.slice()})}
+  UI.seg=true;saveDraft(f);
+}
+function onCellTap(i){
+  if(!G)return;
+  UI.info=i;
+  if(!canPlot()){render();return}
+  const f=UI.as,P=planInfo(f);
+  if(UI.sel!=null){
+    const u=G.units.find(x=>x.id===UI.sel);
+    if(u){const end=P.pos[u.id],left=UNIT[u.t].mp-P.used[u.id];
+      if(i!==end){const rr=reachFrom(u.t,end,left);if(rr.dist.has(i)){addSteps(f,u.id,pathTo(rr,end,i));render();return}}}
+  }
+  const here=G.units.filter(u=>u.f===f&&P.pos[u.id]===i);
+  if(here.length){const k=here.findIndex(u=>u.id===UI.sel);const nu=here[(k+1)%here.length];if(UI.sel!==nu.id){UI.sel=nu.id;UI.seg=false}else{UI.sel=null;UI.seg=false}}
+  else if(UI.sel!=null)toast('Out of range — tap a highlighted hex, or Done');
+  render();
+}
+async function submitOrders(){
+  const f=UI.as,turn=G.turn,d=getDraft(f).map(x=>({u:x.u,path:x.path.slice()}));
+  UI.busy=true;UI.sel=null;UI.seg=false;render();
+  const ok=await mutate(g=>{
+    if(g.phase!=='orders'||g.turn!==turn||!g.players[f].alive||g.players[f].uid!==ME)return false;
+    g.orders[f]=d;g.submitted[f]=true;
+    if(g.players.every((p,k)=>!p.alive||g.submitted[k]))resolveTurn(g);
+  });
+  UI.busy=false;
+  if(!ok)toast("Couldn't submit — the turn may have changed");
+  pickAs();render();afterSync();
+}
+async function editOrders(){
+  const f=UI.as,turn=G.turn;
+  UI.busy=true;render();
+  const ok=await mutate(g=>{if(g.turn!==turn||!g.submitted[f]||g.players[f].uid!==ME)return false;g.submitted[f]=false});
+  UI.busy=false;
+  if(ok){saveDraft(f)}else toast('Too late — all orders were already in');
+  render();
+}
+
+// ================= replay =================
+let playT=0;
+function stopPlay(){clearInterval(playT);playT=0;if(UI.rp)UI.rp.playing=false}
+function startReplay(){LS.set('wc.seen.'+GID,G.replay.turn);UI.rp={i:-1,playing:false};UI.sel=null;hideOverlay();playPause()}
+function playPause(){
+  if(!UI.rp)return;
+  if(UI.rp.playing){stopPlay();render();return}
+  const n=G.replay.steps.length;
+  if(UI.rp.i>=n)UI.rp.i=-1;
+  UI.rp.playing=true;
+  playT=setInterval(()=>{if(!UI.rp){stopPlay();return}if(UI.rp.i>=n){stopPlay();render();return}UI.rp.i++;render()},750);
+  render();
+}
+function rpStep(d){if(!UI.rp)return;stopPlay();const n=G.replay.steps.length;UI.rp.i=Math.max(-1,Math.min(n,UI.rp.i+d));render()}
+function rpView(){
+  const r=G.replay,i=UI.rp.i,pos=new Map(),meta=new Map(),owner=r.so.slice(),gone=new Set();let ct=[];
+  r.su.forEach(([id,c,f,t,name])=>{pos.set(id,c);meta.set(id,{id,f,t,name})});
+  for(let k=0;k<=Math.min(i,r.steps.length-1);k++){const st=r.steps[k];st.mv.forEach(([u,a,b])=>pos.set(u,b));st.fl.forEach(([h,o])=>owner[h]=o);st.gone.forEach(u=>gone.add(u));if(k===i)ct=st.ct}
+  if(i>=r.steps.length)r.end.forEach(([h,o])=>owner[h]=o);
+  const units=[];pos.forEach((c,id)=>{if(!gone.has(id))units.push({...meta.get(id),c})});
+  return{owner,units,ct,pos,meta};
+}
+function rpText(v){
+  const r=G.replay,i=UI.rp.i,n=r.steps.length,nm=id=>{const m=v.meta.get(id);return m?`${G.players[m.f].name} ${m.name}`:'?'};
+  if(i<0)return`Start of turn ${r.turn}. ${n?`${n} step${n>1?'s':''} to play.`:'Nobody moved.'}`;
+  if(i>=n){const k=r.end.length;return k?`End of turn: ${k} encircled hex${k>1?'es':''} changed hands.`:'End of turn.'}
+  const st=r.steps[i],parts=[];
+  st.mv.forEach(([u,a,b])=>parts.push(`${nm(u)} → ${G.map.countries[G.map.cells[b].c].name}`));
+  st.ct.forEach(([a,b])=>parts.push(`⚔ Contact: ${nm(a)} & ${nm(b)}`));
+  st.el.forEach(f=>parts.push(`☠ ${G.players[f].name} eliminated`));
+  return parts.join(' · ');
 }
 
 // ================= input =================
 let toastT=0;
-function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),1800)}
-function onTap(t){
-  if(!G||G.phase==='over')return;
-  if(!myTurn()){const p=G.players[G.turn];return toast(`It's ${p.name}'s turn`)}
-  if(G.pendingMove)return;
-  const me=G.turn, mine=G.owner[t]===me, name=G.map.terrs[t].name;
-  if(G.phase==='reinforce'){
-    if(!mine)return toast(`${name} isn't yours`);
-    if(G.reinforce<=0)return toast(cur().cards.length>=5?'Trade a card set first':'All armies placed — tap Attack →');
-    const n=UI.amt==='all'?G.reinforce:Math.min(UI.amt,G.reinforce);
-    G.armies[t]+=n;G.reinforce-=n;UI.hist.push([t,n]);toast(`+${n} ${name}`);
-  }else if(G.phase==='attack'){
-    if(mine){
-      if(t===UI.sel){clearSel()}
-      else if(G.armies[t]<2)return toast(`${name} needs 2+ armies to attack`);
-      else if(!hasEnemyNb(t))return toast(`${name} has no enemy neighbours`);
-      else{UI.sel=t;UI.tgt=null;UI.lastRoll=null}
-    }else if(UI.sel!=null&&G.map.terrs[UI.sel].adj.includes(t)){UI.tgt=t;UI.lastRoll=null;UI.dice=Math.min(3,G.armies[UI.sel]-1)}
-    else return toast(UI.sel==null?'First tap one of your territories':`${name} doesn't border ${G.map.terrs[UI.sel].name}`);
-  }else if(G.phase==='fortify'){
-    if(!mine)return toast(`${name} isn't yours`);
-    if(t===UI.sel)clearSel();
-    else if(UI.sel!=null&&reach(UI.sel).has(t))UI.tgt=t;
-    else if(G.armies[t]<2)return toast(`${name} needs 2+ armies to move from`);
-    else if(!reach(t).size)return toast(`${name} isn't connected to your other territories`);
-    else{UI.sel=t;UI.tgt=null}
-  }
-  save();render();
-}
-
-const TURN_ACTS=new Set(['amt','undo','trade','toAttack','dice','roll','blitz','cancelSel','endAttack','confirmMove','fortMove','endTurn']);
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),1900)}
 function act(a,ds){
-  if(TURN_ACTS.has(a)&&!myTurn())return;
   switch(a){
-    case 'amt':UI.amt=ds.v==='all'?'all':+ds.v;render();return;
-    case 'undo':{const h=UI.hist.pop();if(h){G.armies[h[0]]-=h[1];G.reinforce+=h[1]}break}
-    case 'cards':if(!G)return;UI.csel=[];openCards();return;
-    case 'csel':{const i=+ds.i,k=UI.csel.indexOf(i);if(k>=0)UI.csel.splice(k,1);else if(UI.csel.length<3)UI.csel.push(i);openCards();return}
-    case 'trade':trade(UI.csel);UI.csel=[];UI.hist=[];hideOverlay();break;
-    case 'toAttack':if(G.reinforce===0&&cur().cards.length<5){G.phase='attack';UI.hist=[];clearSel()}break;
-    case 'dice':UI.dice=+ds.v;render();return;
-    case 'roll':doAttack(false);break;
-    case 'blitz':doAttack(true);break;
-    case 'cancelSel':clearSel();render();return;
-    case 'endAttack':G.phase='fortify';clearSel();break;
-    case 'confirmMove':confirmMove(+$('mv').value);break;
-    case 'fortMove':fortify(+$('fv').value);return;
-    case 'endTurn':endTurn();return;
+    case 'selu':{if(!canPlot())return;const id=+ds.id;if(UI.sel===id){UI.sel=null}else{UI.sel=id;const u=G.units.find(x=>x.id===id);if(u)UI.info=planInfo(UI.as).pos[id]}UI.seg=false;render();return}
+    case 'done':UI.sel=null;UI.seg=false;render();return;
+    case 'undo':{if(!canPlot())return;const d=getDraft(UI.as),last=d[d.length-1];if(!last)return;last.path.pop();if(!last.path.length)d.pop();const nl=d[d.length-1];UI.seg=!!(nl&&nl.u===UI.sel);saveDraft(UI.as);render();return}
+    case 'clear':if(!canPlot())return;getDraft(UI.as).length=0;UI.sel=null;UI.seg=false;saveDraft(UI.as);render();return;
+    case 'submit':if(canPlot())submitOrders();return;
+    case 'edit':editOrders();return;
+    case 'as':UI.as=+ds.f;UI.sel=null;UI.seg=false;render();return;
+    case 'zin':{const r=mapRect();zoomAt(r.left+r.width/2,r.top+r.height/2,1/1.4);return}
+    case 'zout':{const r=mapRect();zoomAt(r.left+r.width/2,r.top+r.height/2,1.4);return}
+    case 'zfit':fitView();return;
+    case 'replay':if(G&&G.replay)startReplay();return;
+    case 'skipReplay':LS.set('wc.seen.'+GID,G.replay.turn);hideOverlay();return;
+    case 'rpPlay':playPause();return;
+    case 'rpPrev':rpStep(-1);return;
+    case 'rpNext':rpStep(1);return;
+    case 'rpStart':stopPlay();UI.rp.i=-1;render();return;
+    case 'rpEnd':stopPlay();UI.rp.i=G.replay.steps.length;render();return;
+    case 'rpClose':stopPlay();UI.rp=null;render();afterSync();return;
     case 'menu':if(G)openMenu();return;
     case 'closeOv':hideOverlay();return;
     case 'watch':UI.watchOnly=true;hideOverlay();return;
@@ -552,98 +722,93 @@ function act(a,ds){
     case 'open':location.href=gameLink(ds.id);return;
     case 'forget':LS.set('frontline.games',LS.get('frontline.games',[]).filter(x=>x.id!==ds.id));openHome();return;
     case 'openSetup':openSetup();return;
-    case 'np':readSetup();SU.np=+ds.v;openSetup();return;
-    case 'sz':readSetup();SU.sz=ds.v;SU.seed=newSeed();openSetup();return;
-    case 'reroll':readSetup();SU.seed=newSeed();openSetup();return;
-    case 'create':readSetup();createGame(ds);return;
+    case 'reroll':readSetup();SU.seed=newSeed();SU.map=null;openSetup();return;
+    case 'create':readSetup();createGame();return;
     case 'retry':location.reload();return;
   }
-  save();render();
 }
 document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(b&&!b.disabled)act(b.dataset.act,b.dataset)});
-document.addEventListener('input',e=>{if(e.target.id==='mv'||e.target.id==='fv')$(e.target.id+'v').textContent=e.target.value});
-document.addEventListener('change',e=>{if(e.target.id==='tgc'){UI.showConts=e.target.checked;render()}});
-$('map').addEventListener('click',e=>{const g=e.target.closest('[data-t]');if(g)onTap(+g.dataset.t)});
 
 // ================= rendering =================
 function render(){
   if(!G||!R)return;
-  const mt=myTurn(), opts=new Set();
-  if(mt&&G.phase==='attack'&&UI.sel!=null&&UI.tgt==null&&!G.pendingMove)G.map.terrs[UI.sel].adj.forEach(u=>{if(G.owner[u]!==G.turn)opts.add(u)});
-  if(mt&&G.phase==='fortify'&&UI.sel!=null&&UI.tgt==null)reach(UI.sel).forEach(u=>opts.add(u));
-  const pm=G.pendingMove, sel=mt?UI.sel:null, tgt=mt?UI.tgt:null;
-  G.map.terrs.forEach((t,k)=>{
-    const col=UI.showConts?contColor(t.cont):terrColor(G.owner[k],t.cont);
-    R.terrG[k].style.fill=col;R.terrG[k].style.stroke=col;
-    R.badgeT[k].textContent=pm&&pm.to===k?'?':G.armies[k];
-    R.badgeC[k].style.stroke=pcol(G.owner[k]);
-    let c='hl';
-    if(pm&&k===pm.from||!pm&&k===sel)c+=' sel';else if(pm&&k===pm.to||!pm&&k===tgt)c+=' tgt';else if(opts.has(k))c+=' opt';
-    R.outline[k].setAttribute('class',c);
-  });
-  const p=cur(), vs=viewSeat();
-  $('ti').innerHTML=`<span class="dot" style="background:${pcol(G.turn)}"></span><b>${esc(p.name)}</b>${mt?'<span class="me">YOUR TURN</span>':''}<span class="rd">Round ${G.round}</span>`;
-  $('bCards').textContent=`🂠 ${vs>=0?G.players[vs].cards.length:'–'}`;
-  [...$('steps').children].forEach((s,i)=>s.classList.toggle('on',PHASES[i]===G.phase));
-  document.title=(mt?'▶ Your turn · ':'')+'Warsea Conquest';
-  renderPanel();
+  const M=G.map;
+  let owner=G.owner,units=G.units,ct=contactsNow(G).map(([a,b])=>[a.id,b.id]),posOf=id=>{const u=G.units.find(x=>x.id===id);return u?u.c:null};
+  if(UI.rp){const v=rpView();owner=v.owner;units=v.units;ct=v.ct;posOf=id=>v.pos.get(id)}
+  M.cells.forEach((c,i)=>{if(c.l)R.poly[i].style.fill=ownerFill(owner[i],c.t)});
+  let d='';M.cells.forEach((c,i)=>{if(!c.l)return;for(let k=0;k<6;k++){const j=c.nb[k];if(j>i&&M.cells[j].l&&owner[j]!==owner[i])d+=edgeSeg(c,k)}});R.own.setAttribute('d',d);
+  // planned moves of the faction being plotted
+  const plotting=!UI.rp&&G.phase==='orders'&&UI.as!=null&&G.players[UI.as]&&G.players[UI.as].uid===ME;
+  let plan=null;R.paths.innerHTML='';
+  if(plotting){
+    plan=planInfo(UI.as);
+    plan.segs.forEach(pts=>{if(pts.length>1)el('polyline',{points:pts.map(h=>M.cells[h].x+','+M.cells[h].y).join(' '),class:'plan'},R.paths)});
+    plan.labels.forEach(([h,n])=>{const c=M.cells[h];const g=el('g',{class:'pnum'},R.paths);el('circle',{cx:c.x+5,cy:c.y-4.2,r:2.3},g);el('text',{x:c.x+5,y:c.y-4.1},g).textContent=n});
+  }
+  // reachable hexes for the selected unit
+  let rd='';
+  if(plotting&&canPlot()&&UI.sel!=null){const u=G.units.find(x=>x.id===UI.sel);if(u){const end=plan.pos[u.id],rr=reachFrom(u.t,end,UNIT[u.t].mp-plan.used[u.id]);rr.dist.forEach((v,h)=>{if(h!==end)rd+=`M${hexPts(M.cells[h]).replace(/ /g,'L')}Z`})}}
+  R.reach.setAttribute('d',rd);
+  // unit tokens (shown at planned positions while plotting)
+  const shown=units.map(u=>plan&&u.f===UI.as&&plan.pos[u.id]!=null?{...u,c:plan.pos[u.id]}:u);
+  drawUnits(shown,plotting?UI.sel:null);
+  R.fx.innerHTML='';
+  ct.forEach(([a,b])=>{const pa=posOf(a),pb=posOf(b);if(pa==null||pb==null)return;const A=M.cells[pa],Bc=M.cells[pb];el('text',{x:(A.x+Bc.x)/2,y:(A.y+Bc.y)/2+1.8,class:'clash'},R.fx).textContent='⚔'});
+  renderTop();renderPanel();
 }
-function diceHTML(){
-  const r=UI.lastRoll; if(!r)return'';
-  return`<div class="dice">${r.a.map(v=>`<span class="die att">${v}</span>`).join('')}<span class="v">vs</span>${r.d.map(v=>`<span class="die def">${v}</span>`).join('')}</div><div class="sub">${esc(r.text)}</div>`;
+function renderTop(){
+  const t=G.phase==='over'?Math.min(G.turn-1,G.maxTurns):G.turn;
+  $('ti').innerHTML=`<b>Turn ${t}</b><span class="rd">of ${G.maxTurns}</span>${UI.rp?'<span class="me">REPLAY</span>':''}`;
+  $('scores').innerHTML=G.players.map((p,f)=>{
+    const st=!p.alive?'☠':G.phase==='over'?'':!p.uid?'·':G.submitted[f]?'✓':'…';
+    return`<span class="sc ${p.alive?'':'out'} ${f===UI.as?'as':''}"><i style="background:${pcol(f)}"></i>${esc(p.name)} <b>${landCount(G,f)}</b><em>${st}</em></span>`;
+  }).join('');
 }
-function lastActHTML(){
-  const r=G.lastAct; if(!r)return'';
-  return`<div class="dice">${r.a.map(v=>`<span class="die att">${v}</span>`).join('')}<span class="v">vs</span>${r.d.map(v=>`<span class="die def">${v}</span>`).join('')}</div><div class="sub">${esc(r.text)}</div>`;
+function infoHTML(){
+  const i=UI.info;if(i==null||!G)return'';const c=G.map.cells[i];
+  if(!c.l)return`<div class="info">Ocean</div>`;
+  const k=G.map.countries[c.c],o=G.owner[i],tags=[];
+  if(G.map.factions.some(f=>f.cap===i))tags.push('★ faction capital');else if(c.cap>=0)tags.push('● capital');
+  if(c.port)tags.push('⚓ port');
+  const us=G.units.filter(u=>u.c===i).map(u=>`${G.players[u.f].name} ${u.name}`);
+  return`<div class="info"><b>${esc(k.name)}</b> · ${TERR[c.t]} (inf ${COST.inf[c.t]} / armd ${COST.arm[c.t]} MP)${tags.length?' · '+tags.join(' · '):''} · held by <span style="color:${pcol(o)}">${o>=0?esc(G.players[o].name):'no one'}</span>${us.length?'<br>'+esc(us.join(', ')):''}</div>`;
 }
-const PHASE_DO={reinforce:'placing armies',attack:'attacking',fortify:'fortifying'};
 function renderPanel(){
-  const p=cur(), nc=p.cards.length; let h='';
-  if(G.phase==='over'){
-    h=`<div class="msg big">🏆 <b style="color:${pcol(G.winner)}">${esc(G.players[G.winner].name)}</b> conquers the world!</div>${lastActHTML()}<div class="row"><button data-act="menu">Battle log</button><button class="primary" data-act="openSetup">New game</button></div>`;
-  }else if(!myTurn()){
-    const joined=!!p.uid;
-    h=`<div class="msg wait"><span class="dot" style="background:${pcol(G.turn)}"></span><span>${joined?`Waiting for <b>${esc(p.name)}</b> — ${PHASE_DO[G.phase]||''}`:`<b>${esc(p.name)}</b>'s turn, but nobody has taken that seat yet`}</span></div>
-    ${joined?'':'<div class="sub">Send the invite link to the friend who should play this colour.</div>'}
-    ${lastActHTML()}
-    <div class="row"><button data-act="share">Invite link</button><button data-act="menu">Log &amp; standings</button></div>
+  let h='';
+  if(UI.rp){
+    const r=G.replay,n=r.steps.length,i=UI.rp.i,v=rpView();
+    h=`<div class="msg">Turn ${r.turn} replay <span class="rd">· ${i<0?'start':i>=n?'end':`step ${i+1} of ${n}`}</span></div>
+    <div class="sub rpt">${esc(rpText(v))}</div>
+    <div class="row rp"><button data-act="rpStart">⏮</button><button data-act="rpPrev">◀</button><button class="primary" data-act="rpPlay">${UI.rp.playing?'⏸':'▶'}</button><button data-act="rpNext">▶|</button><button data-act="rpEnd">⏭</button></div>
+    <div class="row"><button data-act="rpClose">Close replay</button></div>`;
+  }else if(G.phase==='over'){
+    const w=G.winners||[];
+    h=`<div class="msg big">🏆 ${w.length>1?'Tie: ':''}${w.map(f=>`<b style="color:${pcol(f)}">${esc(G.players[f].name)}</b>`).join(' & ')} ${w.length>1?'':'wins'} with ${w.length?landCount(G,w[0]):0} hexes</div>
+    ${infoHTML()}<div class="row">${G.replay?'<button data-act="replay">Watch last turn</button>':''}<button data-act="menu">Log</button><button class="primary" data-act="openSetup">New game</button></div>`;
+  }else if(UI.as==null){
+    const wait=G.players.map((p,f)=>p.alive&&!G.submitted[f]?f:-1).filter(f=>f>=0);
+    h=`<div class="msg">Turn ${G.turn} — waiting for orders from ${wait.map(f=>`<b style="color:${pcol(f)}">${esc(G.players[f].name)}</b>`).join(', ')}</div>${infoHTML()}
+    <div class="row"><button data-act="share">Invite link</button>${G.replay?'<button data-act="replay">Watch last turn</button>':''}</div>
     ${mySeats().length?'':'<div class="row"><button class="primary" data-act="seats">Pick a seat</button></div>'}`;
-  }else if(G.pendingMove){
-    const pm=G.pendingMove;
-    h=`<div class="msg">🏴 Captured <b>${tn(pm.to)}</b>! Move armies in from ${tn(pm.from)}:</div>${diceHTML()}
-    <div class="row slider"><input type="range" id="mv" min="${pm.min}" max="${pm.max}" value="${pm.max}"><b id="mvv">${pm.max}</b></div>
-    <div class="row"><button class="primary" data-act="confirmMove">Move armies</button></div>`;
-  }else if(G.phase==='reinforce'){
-    h=`<div class="msg">Place <b>${G.reinforce}</b> ${G.reinforce===1?'army':'armies'} — tap your territories.</div>
-    <div class="sub">${esc(G.reinfoNote)}</div>
-    <div class="row"><span class="lbl">Per tap</span>${[1,3,'all'].map(v=>`<button class="chip ${UI.amt===v?'on':''}" data-act="amt" data-v="${v}">${v==='all'?'All':v}</button>`).join('')}</div>
-    ${nc>=5?`<div class="warn">You hold ${nc} cards — you must trade a set before attacking.</div>`:''}
-    <div class="row"><button data-act="undo" ${UI.hist.length?'':'disabled'}>↶ Undo</button><button data-act="cards">Cards (${nc})</button><button class="primary" data-act="toAttack" ${G.reinforce===0&&nc<5?'':'disabled'}>Attack →</button></div>`;
-  }else if(G.phase==='attack'){
-    if(UI.sel!=null&&UI.tgt!=null){
-      const a=G.armies[UI.sel], maxd=Math.min(3,a-1); if(UI.dice>maxd)UI.dice=maxd;
-      h=`<div class="msg vs"><span>${tn(UI.sel)} <b>${a}</b></span><span class="sw">⚔</span><span><b>${G.armies[UI.tgt]}</b> ${tn(UI.tgt)}</span></div>${diceHTML()}
-      ${maxd>0?`<div class="row"><span class="lbl">Dice</span>${[1,2,3].filter(v=>v<=maxd).map(v=>`<button class="chip ${UI.dice===v?'on':''}" data-act="dice" data-v="${v}">${v}</button>`).join('')}</div>`:''}
-      <div class="row">${a>1?`<button class="primary" data-act="roll">Roll</button><button class="danger" data-act="blitz">Blitz</button><button data-act="cancelSel">Cancel</button>`:`<button data-act="cancelSel">Out of armies — OK</button>`}</div>`;
-    }else if(UI.sel!=null){
-      h=`<div class="msg">Attacking from <b>${tn(UI.sel)}</b> (${G.armies[UI.sel]}). Tap a flashing enemy territory.</div>${diceHTML()}
-      <div class="row"><button data-act="cancelSel">Cancel</button><button data-act="endAttack">End attacks →</button></div>`;
+  }else{
+    const f=UI.as,mine=mySeats().filter(x=>G.players[x].alive);
+    const asRow=mine.length>1?`<div class="row" style="margin-top:0"><span class="lbl">Orders for</span>${mine.map(x=>`<button class="chip ${x===f?'on':''}" data-act="as" data-f="${x}"><i class="sw" style="background:${pcol(x)}"></i>${esc(G.players[x].name)}${G.submitted[x]?' ✓':''}</button>`).join('')}</div>`:'';
+    if(G.submitted[f]){
+      const wait=G.players.map((p,k)=>p.alive&&!G.submitted[k]?k:-1).filter(k=>k>=0);
+      h=`${asRow}<div class="msg">✓ Orders in for turn ${G.turn}.</div>
+      <div class="sub">Waiting for ${wait.map(k=>`<b style="color:${pcol(k)}">${esc(G.players[k].name)}</b>${G.players[k].uid?'':' (seat not taken)'}`).join(', ')}. The turn plays out as soon as everyone has submitted.</div>${infoHTML()}
+      <div class="row"><button data-act="edit" ${UI.busy?'disabled':''}>Edit my orders</button>${G.replay?'<button data-act="replay">Watch last turn</button>':''}</div>`;
     }else{
-      h=`<div class="msg">Attack! Tap one of your territories with 2+ armies.</div>${diceHTML()}
-      <div class="row"><button data-act="cards">Cards (${nc})</button><button class="primary" data-act="endAttack">End attacks →</button></div>`;
-    }
-  }else if(G.phase==='fortify'){
-    if(UI.sel!=null&&UI.tgt!=null){
-      const mx=G.armies[UI.sel]-1;
-      h=`<div class="msg">Move from <b>${tn(UI.sel)}</b> to <b>${tn(UI.tgt)}</b>:</div>
-      <div class="row slider"><input type="range" id="fv" min="1" max="${mx}" value="${mx}"><b id="fvv">${mx}</b></div>
-      <div class="row"><button data-act="cancelSel">Cancel</button><button class="primary" data-act="fortMove">Move &amp; end turn</button></div>`;
-    }else if(UI.sel!=null){
-      h=`<div class="msg">Move armies from <b>${tn(UI.sel)}</b> — tap a flashing territory.</div>
-      <div class="row"><button data-act="cancelSel">Cancel</button><button class="primary" data-act="endTurn">End turn</button></div>`;
-    }else{
-      h=`<div class="msg">Fortify: tap a territory to move armies from (once per turn), or end your turn.</div>
-      <div class="row"><button class="primary" data-act="endTurn">End turn</button></div>`;
+      const P=planInfo(f),d=getDraft(f),us=G.units.filter(u=>u.f===f);
+      const chips=us.map(u=>`<button class="uchip ${UI.sel===u.id?'on':''} ${P.ordered.has(u.id)?'ord':''}" data-act="selu" data-id="${u.id}"><span class="usy">${u.t==='inf'?'✕':'⬭'}</span>${esc(u.name.replace('Infantry','Inf').replace('Armoured','Armd'))}<small>${UNIT[u.t].mp-P.used[u.id]}/${UNIT[u.t].mp} MP</small></button>`).join('');
+      const selU=UI.sel!=null?us.find(u=>u.id===UI.sel):null;
+      const msg=selU?`Moving <b>${esc(selU.name)}</b>: tap a highlighted hex (${UNIT[selU.t].mp-P.used[selU.id]} MP left). Tap <b>Done</b> to switch units.`
+        :`Turn ${G.turn} of ${G.maxTurns}: tap a unit to plot its path. Units without orders stay put.`;
+      const list=d.length?`<div class="ins">${d.map((x,k)=>{const u=us.find(z=>z.id===x.u);return`<span>${k+1}. ${esc(u?u.name:'?')} → ${x.path.length} hex${x.path.length>1?'es':''}</span>`}).join('')}</div>`:'';
+      h=`${asRow}<div class="msg sm">${msg}</div>
+      <div class="uchips">${chips}</div>
+      <div class="sub">${P.ordered.size}/${G.limit[f]} units ordered${d.length?` · ${d.reduce((s,x)=>s+x.path.length,0)} steps`:''}</div>${list}${infoHTML()}
+      <div class="row">${selU?'<button data-act="done">Done</button>':''}<button data-act="undo" ${d.length?'':'disabled'}>↶ Undo</button><button data-act="clear" ${d.length?'':'disabled'}>Clear</button><button class="primary" data-act="submit" ${UI.busy?'disabled':''}>Submit orders</button></div>`;
     }
   }
   $('panel').innerHTML=h;
@@ -652,52 +817,39 @@ function renderPanel(){
 // ================= overlays =================
 function showOverlay(html,cls,name){const o=$('overlay');o.className=cls||'';o.innerHTML=html;o.scrollTop=0;UI.ov=name||'misc'}
 function hideOverlay(){const o=$('overlay');o.className='hidden';o.innerHTML='';UI.ov=null;afterSync()}
-const logLine=e=>`<div class="ll"><span class="r">R${e.r}</span><span class="dot" style="background:${pcol(e.p)}"></span><span>${esc(e.m)}</span></div>`;
-function openYourTurn(){
-  const s=G.turn, p=G.players[s]; promptKey=`${G.round}:${G.turn}`;
-  const ev=G.log.slice(G.lastSeen[s]).filter(e=>e.p!==s).slice(-12), multi=mySeats().length>1;
-  showOverlay(`<div class="pass" style="--pc:${pcol(s)}"><div class="pr">Round ${G.round}</div><h1>${multi?esc(p.name)+"'s turn":'Your turn, '+esc(p.name)}</h1>
-  ${multi?`<p class="sub">You're playing several colours on this phone.</p>`:''}
-  ${ev.length?`<div class="since"><h3>Since your last turn</h3>${ev.map(logLine).join('')}</div>`:''}
-  <button class="primary big" data-act="closeOv">Start turn</button></div>`,'full','turn');
-}
-function openCards(){
-  const s=viewSeat(); if(s<0)return toast('Pick a seat first');
-  const p=G.players[s], mt=myTurn();
-  const cards=p.cards.map((c,i)=>`<button class="card ${UI.csel.includes(i)?'on':''}" data-act="csel" data-i="${i}"><span class="ci">${CICON[c.k]}</span><span class="ck">${CNAME[c.k]}</span><span class="ct">${c.t>=0?esc(G.map.terrs[c.t].name):'Any set'}</span>${c.t>=0&&G.owner[c.t]===s?'<span class="cown">+2</span>':''}</button>`).join('');
-  const ok=mt&&validSet(UI.csel.map(i=>p.cards[i]))&&G.phase==='reinforce'&&!G.pendingMove;
-  const hint=!mt?'You can trade at the start of your turn.':G.phase!=='reinforce'?'You can only trade during Reinforce.':'A set is 3 of a kind, one of each, or any 2 + a Wild. "+2" means you own that territory and get 2 bonus armies there.';
-  showOverlay(`<div class="sheet"><div class="sh-h"><h2>${esc(p.name)}'s cards</h2><button class="ghost" data-act="closeOv">✕</button></div>
-  <div class="sub">Next set is worth <b>${tradeValue(G.trades)}</b> armies. ${hint}</div>
-  ${cards?`<div class="cards">${cards}</div>`:'<p class="sub">No cards yet. Capture at least one territory in a turn to earn a card.</p>'}
-  <div class="row"><button data-act="closeOv">Close</button>${mt?`<button class="primary" data-act="trade" ${ok?'':'disabled'}>Trade set</button>`:''}</div></div>`,'','cards');
+const logLine=e=>`<div class="ll"><span class="r">T${e.t}</span><span class="dot" style="background:${pcol(e.f)}"></span><span>${esc(e.m)}</span></div>`;
+function openReplayPrompt(){
+  const r=G.replay,ev=G.log.filter(e=>e.t===r.turn);
+  showOverlay(`<div class="sheet"><div class="sh-h"><h2>Turn ${r.turn} has played out</h2><button class="ghost" data-act="skipReplay">✕</button></div>
+  ${ev.length?`<div class="log">${ev.map(logLine).join('')}</div>`:'<p class="sub">Nothing much happened.</p>'}
+  <div class="row"><button data-act="skipReplay">Skip</button><button class="primary" data-act="replay">▶ Watch replay</button></div></div>`,'','rprompt');
 }
 function openMenu(){
-  const pl=G.players.map((p,i)=>{const n=G.owner.filter(o=>o===i).length,a=G.armies.reduce((s,v,t)=>s+(G.owner[t]===i?v:0),0);
-    return`<div class="prow ${p.alive?'':'out'}"><span class="dot" style="background:${pcol(i)}"></span><span class="pn">${esc(p.name)} ${p.uid===ME?'<span class="me">YOU</span>':p.uid?'':'<span class="rd">(open seat)</span>'}</span><span class="pm">${n} terr · ${a} armies · ${p.cards.length} cards</span></div>`}).join('');
-  const cs=G.map.conts.map((c,k)=>{const o=c.terrs.map(t=>G.owner[t]),all=o.every(x=>x===o[0]);
-    return`<div class="crow"><span class="sw" style="background:${contColor(k)}"></span><span class="cn">${esc(c.name)}</span><span class="cm">${c.terrs.length} terr</span><span class="cb">+${c.bonus}</span>${all?`<span class="dot" style="background:${pcol(o[0])}"></span>`:'<span class="dot empty"></span>'}</div>`}).join('');
+  const pl=G.players.map((p,i)=>`<div class="prow ${p.alive?'':'out'}"><span class="dot" style="background:${pcol(i)}"></span><span class="pn">${esc(p.name)} ${p.uid===ME?'<span class="me">YOU</span>':p.uid?'':'<span class="rd">(open seat)</span>'}</span><span class="pm">${landCount(G,i)} hexes · ${G.units.filter(u=>u.f===i).length} units</span></div>`).join('');
+  const cs=G.map.countries.map(k=>{const held=G.owner[k.cap];return`<div class="crow"><span class="sw" style="background:${pcol(k.f)}"></span><span class="cn">${esc(k.name)}</span><span class="cm">${k.L?'large':'small'} · ${k.n} hexes · capital held by</span><span class="dot" style="background:${pcol(held)}"></span></div>`}).join('');
   const open=G.players.some(p=>!p.uid);
   showOverlay(`<div class="sheet"><div class="sh-h"><h2>Menu</h2><button class="ghost" data-act="closeOv">✕</button></div>
   <h3>Players</h3>${pl}
   <div class="row"><button data-act="share">Invite link</button>${open||!mySeats().length?'<button data-act="seats">Pick a seat</button>':''}</div>
-  <h3>Continents · bonus armies</h3>${cs}
-  <label class="tog"><input type="checkbox" id="tgc" ${UI.showConts?'checked':''}> Colour map by continent</label>
-  <h3>Battle log</h3><div class="log">${G.log.slice(-60).reverse().map(logLine).join('')}</div>
+  <h3>Map key</h3>
+  <table class="key"><tr><th></th><th>Terrain</th><th>Inf MP</th><th>Armd MP</th></tr>
+  <tr><td>—</td><td>Plains</td><td>1</td><td>1</td></tr><tr><td>▦</td><td>Urban</td><td>1</td><td>1</td></tr>
+  <tr><td>▲</td><td>Mountains</td><td>2</td><td>2</td></tr><tr><td>≈</td><td>Swamp</td><td>2</td><td>3</td></tr></table>
+  <p class="sub">Infantry ✕ has 3 MP and controls only its own hex. Armour ⬭ has 5 MP and controls its hex plus the hexes around it. ★ faction capital (lose it and you're out) · ● country capital · ⚓ port · ⚔ units in contact (battles arrive in stage 2). On the score bar, ✓ means that player's orders are in and … means they're still planning.</p>
+  <h3>Countries</h3>${cs}
+  <h3>War log</h3><div class="log">${G.log.slice(-80).reverse().map(logLine).join('')}</div>
   <div class="row"><button data-act="home">All my games</button><button data-act="openSetup">New game</button></div>
   <div class="row"><button class="primary" data-act="closeOv">Close</button></div></div>`,'','menu');
 }
 function openSeats(){
-  const nm=LS.get('frontline.name','');
-  const prev=$('myname')?$('myname').value:nm;
+  const prev=$('myname')?$('myname').value:LS.get('frontline.name','');
   const rows=G.players.map((p,i)=>p.uid
     ?`<div class="prow"><span class="dot" style="background:${pcol(i)}"></span><span class="pn">${esc(p.name)}</span>${p.uid===ME?'<span class="me">YOU</span>':`<span class="pm">taken</span><button class="chip" data-act="reclaim" data-i="${i}">It's me</button>`}</div>`
     :`<button class="seat" data-act="claim" data-i="${i}" style="--pc:${pcol(i)}"><span class="dot" style="background:${pcol(i)}"></span><span><b>${esc(PCOL[i].name)}</b> — open seat</span></button>`).join('');
   showOverlay(`<div class="sheet"><div class="sh-h"><h2>Pick your colour</h2><button class="ghost" data-act="watch">✕</button></div>
   <div class="sub">Type your name, then tap an open colour.</div>
   <input id="myname" class="pname" maxlength="16" placeholder="Your name" value="${esc(prev)}" style="border-left-color:var(--accent)">
-  ${rows}
-  <div class="row"><button data-act="watch">Just watch</button></div></div>`,'','seats');
+  ${rows}<div class="row"><button data-act="watch">Just watch</button></div></div>`,'','seats');
 }
 function openReclaim(i){
   showOverlay(`<div class="sheet"><h2>Take over ${esc(G.players[i].name)}?</h2>
@@ -705,15 +857,12 @@ function openReclaim(i){
   <div class="row"><button data-act="seats">Cancel</button><button class="danger" data-act="reclaimYes" data-i="${i}">Take over</button></div></div>`,'','reclaim');
 }
 async function claimSeat(i,force){
-  const inp=$('myname'); const name=((inp&&inp.value.trim())||LS.get('frontline.name','')||PCOL[i].name).slice(0,16);
+  const inp=$('myname');const name=((inp&&inp.value.trim())||LS.get('frontline.name','')||PCOL[i].name).slice(0,16);
   LS.set('frontline.name',name);
-  try{
-    const ok=await B.tx(GID,cur=>{if(!cur)return null;const g=JSON.parse(cur.state),p=g.players[i];if(p.uid&&p.uid!==ME&&!force)return null;p.uid=ME;p.name=name;return{v:1,rev:cur.rev+1,state:JSON.stringify(g)}});
-    if(!ok){toast('Someone just took that colour');const d=await B.load(GID);applyRemote(d,false);openSeats();return}
-    const d=await B.load(GID); applyRemote(d,false);
-    rememberGame(GID);
-    UI.ov=null; hideOverlay(); toast(`You are ${PCOL[i].name}`);
-  }catch(e){console.error(e);toast("Couldn't join — check your connection")}
+  let taken=false;
+  const ok=await mutate(g=>{const p=g.players[i];if(p.uid&&p.uid!==ME&&!force){taken=true;return false}p.uid=ME;p.name=name});
+  if(!ok){if(taken)toast('Someone just took that colour');openSeats();return}
+  rememberGame(GID);UI.ov=null;pickAs();hideOverlay();toast(`You are ${PCOL[i].name}`);
 }
 function openShare(fresh){
   const link=gameLink(GID);
@@ -728,50 +877,44 @@ async function nativeShare(){try{await navigator.share({title:'Warsea Conquest',
 function openHome(){
   const gs=LS.get('frontline.games',[]);
   const list=gs.length?gs.map(g=>`<div class="grow"><span>Game from ${new Date(g.t).toLocaleDateString(undefined,{month:'short',day:'numeric'})}${g.label?' · '+esc(g.label):''}</span><button class="chip" data-act="open" data-id="${esc(g.id)}">Open</button><button class="ghost" data-act="forget" data-id="${esc(g.id)}" aria-label="Forget">✕</button></div>`).join(''):'<p class="sub">No games on this phone yet.</p>';
-  showOverlay(`<div class="sheet setup"><h1>WARSEA CONQUEST</h1><div class="sub">Conquer a freshly generated world with your friends.</div>
+  showOverlay(`<div class="sheet setup"><h1>WARSEA CONQUEST</h1><div class="sub">Three nations. Fifty turns. Most land wins.</div>
   <div class="row"><button class="primary" data-act="openSetup">Start a new game</button></div>
   <h3>Your games</h3>${list}
   <h3>Joining a friend?</h3><p class="sub">Just open the invite link they sent you.</p></div>`,'full','home');
 }
 function readSetup(){const n=$('myname');if(n)LS.set('frontline.name',n.value.trim().slice(0,16))}
 function openSetup(){
-  if(!SU.map||SU.map.seed!==SU.seed||SU.map.pk!==SU.sz)SU.map=generateMap(SU.seed,SU.sz);
-  const m=SU.map;
+  if(!SU.map){SU.map=genWorld(SU.seed);if(!SU.map){SU.seed=newSeed();SU.map=genWorld(SU.seed)}}
+  const m=SU.map,land=m.cells.filter(c=>c.l).length;
   showOverlay(`<div class="sheet setup"><h1>NEW GAME</h1>
-  <label class="h">Your name</label><input id="myname" class="pname" maxlength="16" placeholder="Your name" value="${esc(LS.get('frontline.name',''))}" style="border-left-color:${'hsl(4 72% 58%)'}">
-  <div class="sub">You'll play Red. Friends pick their colours when they open the link.</div>
-  <label class="h">Players</label><div class="row" style="margin-top:0">${[2,3,4].map(v=>`<button class="chip ${SU.np===v?'on':''}" data-act="np" data-v="${v}">${v}</button>`).join('')}</div>
-  <label class="h">Map size</label><div class="row" style="margin-top:0">${Object.keys(PRESETS).map(k=>`<button class="chip ${SU.sz===k?'on':''}" data-act="sz" data-v="${k}">${PRESETS[k].label}</button>`).join('')}</div>
-  <svg id="prev" xmlns="${NS}"></svg>
-  <div class="sub center">${m.terrs.length} territories · ${m.conts.length} continents (coloured by continent)</div>
+  <label class="h">Your name</label><input id="myname" class="pname" maxlength="16" placeholder="Your name" value="${esc(LS.get('frontline.name',''))}" style="border-left-color:${pcol(0)}">
+  <div class="sub">You'll play Red. Your two friends pick Blue and Green when they open the link.</div>
+  <svg id="prev" xmlns="${NS}" viewBox="${m.vb.join(' ')}"></svg>
+  <div class="sub center">${land} land hexes · each nation starts with a large home country (★ capital) and two small neighbours</div>
   <div class="row"><button data-act="reroll">🎲 New map</button><button class="primary" data-act="create" id="bCreate">Create game</button></div>
   <div class="row"><button data-act="${G?'closeOv':'home'}">${G?'Back to current game':'Back'}</button></div></div>`,'full','setup');
-  buildMap($('prev'),m,true);
+  buildWorldSVG($('prev'),m,true);
 }
-function randomId(){const a='abcdefghjkmnpqrstuvwxyz23456789';let s='';const r=crypto.getRandomValues(new Uint8Array(10));r.forEach(v=>s+=a[v%a.length]);return s}
+function randomId(){const a='abcdefghjkmnpqrstuvwxyz23456789';let s='';crypto.getRandomValues(new Uint8Array(10)).forEach(v=>s+=a[v%a.length]);return s}
 async function createGame(){
-  const btn=$('bCreate'); if(btn){btn.disabled=true;btn.textContent='Creating…'}
-  const name=LS.get('frontline.name','')||PCOL[0].name;
-  const names=[...Array(SU.np).keys()].map(i=>PCOL[i].name);
-  const prevG=G; newGame(SU.map,names); G.players[0].uid=ME; G.players[0].name=name;
-  const id=randomId(); G.id=id;
+  const btn=$('bCreate');if(btn){btn.disabled=true;btn.textContent='Creating…'}
+  const g=newGame(SU.map);g.players[0].uid=ME;g.players[0].name=LS.get('frontline.name','')||'Red';
+  const id=randomId();g.id=id;
   try{
-    const ok=await withTimeout(B.tx(id,cur=>cur?null:{v:1,rev:0,state:JSON.stringify(G)}),20000,'Creating the game');
+    const ok=await withTimeout(B.tx(id,cur=>cur?null:{v:2,rev:0,state:JSON.stringify(g)}),20000,'Creating the game');
     if(!ok)throw new Error('id clash');
   }catch(e){
-    console.error(e);G=prevG;toast("Couldn't create the game — check your connection");
+    console.error(e);toast("Couldn't create the game — check your connection");
     if(btn){btn.disabled=false;btn.textContent='Create game'}
-    showErrorDetail(e);return;
+    const c=(e&&(e.code||e.message))||'';if(c)setTimeout(()=>toast('Error: '+c),2000);return;
   }
   history.replaceState(null,'','?g='+id+(MOCK?'&mock':''));
-  GID=id;REV=0;lastSent=null;promptKey=null;UI.watchOnly=false;
-  rememberGame(id,`${SU.np} players`);
-  SU.seed=newSeed();SU.map=null;
-  R=buildMap($('map'),G.map,false);mapFor=GID;clearSel();
-  startWatching();render();
+  GID=id;REV=-1;mapFor=null;R=null;DRAFT={};UI.watchOnly=false;UI.as=null;UI.rp=null;
+  rememberGame(id,'3 players');SU.seed=newSeed();SU.map=null;
+  applyRemote({v:2,rev:0,state:JSON.stringify(g)},true);
+  startWatching();
   openShare(true);
 }
-function showErrorDetail(e){const c=(e&&(e.code||e.message))||'';if(c)setTimeout(()=>toast('Error: '+c),1900)}
 function showFatal(msg,e){
   const code=e?(e.code||e.message||String(e)):'';
   showOverlay(`<div class="fatal"><h2>😕 ${esc(msg)}</h2>${code?`<code>${esc(code)}</code>`:''}<div class="row" style="width:100%;max-width:360px"><button data-act="home">Home</button><button class="primary" data-act="retry">Try again</button></div></div>`,'full','fatal');
