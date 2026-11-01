@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Frontline</title>
+<title>Warsea Conquest</title>
 <style>
 :root{--bg:#0e141b;--panel:#151e28;--panel2:#1d2935;--line:#2a3846;--text:#e9eef3;--muted:#8fa0b2;--accent:#f2c14e;--danger:#d9533f}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -79,7 +79,7 @@ h3{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted
 .pass .pr{color:var(--muted);letter-spacing:.15em;text-transform:uppercase;font-size:12px}
 .pass .since{text-align:left;width:100%;max-width:420px;background:var(--panel);border-radius:12px;padding:6px 12px 10px;margin:10px 0;max-height:40vh;overflow:auto}
 .pass button.big{min-width:220px;font-size:18px;padding:14px;margin-top:8px}
-.setup h1{margin:6px 0 0;font-size:30px;letter-spacing:.32em;color:var(--accent);font-weight:800}
+.setup h1{margin:6px 0 0;font-size:26px;letter-spacing:.14em;color:var(--accent);font-weight:800}
 .setup label.h{display:block;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:14px 0 6px}
 .pname{width:100%;font:inherit;padding:10px 12px;border-radius:8px;border:1px solid var(--line);border-left-width:6px;background:var(--panel2);color:var(--text);margin-bottom:6px;-webkit-user-select:text;user-select:text}
 #prev{width:100%;height:36vh;display:block;margin-top:10px}
@@ -481,7 +481,7 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 function rememberGame(id,label){const gs=LS.get('frontline.games',[]).filter(x=>x.id!==id);gs.unshift({id,t:Date.now(),label:label||''});LS.set('frontline.games',gs.slice(0,20))}
 function afterSync(){
   if(!G)return;
-  document.title=(myTurn()?'▶ Your turn · ':'')+'Frontline';
+  document.title=(myTurn()?'▶ Your turn · ':'')+'Warsea Conquest';
   if(UI.ov==='seats'){openSeats();return}
   if(UI.ov)return;
   if(!mySeats().length&&!UI.watchOnly&&G.phase!=='over'){openSeats();return}
@@ -585,7 +585,7 @@ function render(){
   $('ti').innerHTML=`<span class="dot" style="background:${pcol(G.turn)}"></span><b>${esc(p.name)}</b>${mt?'<span class="me">YOUR TURN</span>':''}<span class="rd">Round ${G.round}</span>`;
   $('bCards').textContent=`🂠 ${vs>=0?G.players[vs].cards.length:'–'}`;
   [...$('steps').children].forEach((s,i)=>s.classList.toggle('on',PHASES[i]===G.phase));
-  document.title=(mt?'▶ Your turn · ':'')+'Frontline';
+  document.title=(mt?'▶ Your turn · ':'')+'Warsea Conquest';
   renderPanel();
 }
 function diceHTML(){
@@ -724,11 +724,11 @@ function openShare(fresh){
   <div class="row"><button class="primary" data-act="closeOv">${fresh?'Go to the map':'Done'}</button></div></div>`,'','share');
 }
 async function copyLink(){try{await navigator.clipboard.writeText(gameLink(GID));toast('Link copied')}catch(e){toast('Press and hold the link to copy it')}}
-async function nativeShare(){try{await navigator.share({title:'Frontline',text:'Join my Frontline game:',url:gameLink(GID)})}catch(e){}}
+async function nativeShare(){try{await navigator.share({title:'Warsea Conquest',text:'Join my Warsea Conquest game:',url:gameLink(GID)})}catch(e){}}
 function openHome(){
   const gs=LS.get('frontline.games',[]);
   const list=gs.length?gs.map(g=>`<div class="grow"><span>Game from ${new Date(g.t).toLocaleDateString(undefined,{month:'short',day:'numeric'})}${g.label?' · '+esc(g.label):''}</span><button class="chip" data-act="open" data-id="${esc(g.id)}">Open</button><button class="ghost" data-act="forget" data-id="${esc(g.id)}" aria-label="Forget">✕</button></div>`).join(''):'<p class="sub">No games on this phone yet.</p>';
-  showOverlay(`<div class="sheet setup"><h1>FRONTLINE</h1><div class="sub">Conquer a freshly generated world with your friends.</div>
+  showOverlay(`<div class="sheet setup"><h1>WARSEA CONQUEST</h1><div class="sub">Conquer a freshly generated world with your friends.</div>
   <div class="row"><button class="primary" data-act="openSetup">Start a new game</button></div>
   <h3>Your games</h3>${list}
   <h3>Joining a friend?</h3><p class="sub">Just open the invite link they sent you.</p></div>`,'full','home');
