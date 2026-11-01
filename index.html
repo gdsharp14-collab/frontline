@@ -112,7 +112,11 @@ polygon.land{stroke:rgba(0,0,0,.25);stroke-width:.35}
 .unit.sel .ub{stroke:#f2c14e;stroke-width:1.3}
 .usym{fill:none;stroke:#fff;stroke-width:.6}
 .fx{pointer-events:none}
-.clash{font-size:6.5px;text-anchor:middle;fill:#fff;paint-order:stroke;stroke:#b3261e;stroke-width:1.4px}
+.hpbg{fill:rgba(0,0,0,.55)}
+.hpbar{fill:#5ad16b}
+.dmgn{font-size:4.2px;font-weight:800;text-anchor:middle;fill:#ff8a73;paint-order:stroke;stroke:#000;stroke-width:.8px}
+.uchip.inb{border-color:#b3261e}
+.clash{font-size:5px;text-anchor:middle;fill:#fff;paint-order:stroke;stroke:#b3261e;stroke-width:1.4px}
 </style>
 </head>
 <body>
@@ -182,9 +186,14 @@ const NEUTRALS_PER_PAIR=2;
 const NF=3, MAX_TURNS=50, ORDER_LIMIT=3;
 const PCOL=[{name:'Red',h:4},{name:'Blue',h:214},{name:'Green',h:140}];
 const UNIT={
-  inf:{name:'Infantry',type:'Infantry',short:'Inf',mp:3,aoc:0},
-  arm:{name:'Armoured',type:'Armour',short:'Armd',mp:5,aoc:1}
+  inf:{name:'Infantry',type:'Infantry',short:'Inf',mp:3,aoc:0,str:2,hp:10},
+  arm:{name:'Armoured',type:'Armour',short:'Armd',mp:5,aoc:1,str:4,hp:12}
 };
+// ---- combat settings (stage 2) ----
+const TERRAIN_BONUS=0.5;      // +50% strength: armour on plains; infantry vs armour in mountains or urban
+const DMG_SPREAD=[0.5,1.5];   // each hit deals strength x a random factor in this range (rounded, minimum 1)
+const RETREAT_FRAC=0.5;       // retreating units get this share of their movement points (rounded down)
+const MIN_BATTLE_STEPS=6;     // while any battle is going, a turn lasts at least this many steps
 // movement points needed to ENTER a hex of each terrain
 const COST={inf:{P:1,U:1,M:2,S:2},arm:{P:1,U:1,M:2,S:3}};
 const TERR={P:'Plains',M:'Mountains',U:'Urban',S:'Swamp'};
@@ -306,66 +315,109 @@ function newGame(map,opts){
     const cap=map.factions[f].cap;
     const home=map.cells[cap].nb.filter(j=>j>=0&&map.cells[j].l&&map.cells[j].c===f);
     const spots=[cap,...home.slice(0,3)]; while(spots.length<4)spots.push(cap);
-    units.push({id:nid++,f,t:'inf',c:spots[0],name:'1st Infantry'});
-    units.push({id:nid++,f,t:'inf',c:spots[1],name:'2nd Infantry'});
-    units.push({id:nid++,f,t:'inf',c:spots[2],name:'3rd Infantry'});
-    units.push({id:nid++,f,t:'arm',c:spots[3],name:'1st Armoured'});
+    units.push({id:nid++,f,t:'inf',hp:UNIT.inf.hp,c:spots[0],name:'1st Infantry'});
+    units.push({id:nid++,f,t:'inf',hp:UNIT.inf.hp,c:spots[1],name:'2nd Infantry'});
+    units.push({id:nid++,f,t:'inf',hp:UNIT.inf.hp,c:spots[2],name:'3rd Infantry'});
+    units.push({id:nid++,f,t:'arm',hp:UNIT.arm.hp,c:spots[3],name:'1st Armoured'});
   }
   return{v:2,id:null,map,players,owner,units,nid,turn:1,maxTurns:MAX_TURNS,phase:'orders',
     orders:players.map(()=>[]),submitted:players.map(()=>false),limit:players.map(()=>ORDER_LIMIT),
-    replay:null,log:[{t:0,f:-1,m:'The war begins.'}],winners:null,cpu};
+    replay:null,log:[{t:0,f:-1,m:'The war begins.'}],winners:null,cpu,links:[]};
 }
 const landCount=(g,f)=>g.owner.reduce((s,o,i)=>s+(o===f&&g.map.cells[i].l?1:0),0);
 function glog(g,f,m){g.log.push({t:g.turn,f,m});if(g.log.length>250)g.log.splice(0,g.log.length-250)}
+// units that collided head-on stay locked in battle (g.links) even if their areas of control don't overlap
+const linkKey=(a,b)=>Math.min(a,b)+'-'+Math.max(a,b);
+function linkedSet(g){return new Set((g.links||[]).map(([a,b])=>linkKey(a,b)))}
 function contactsNow(g){
-  const out=[];
+  const out=[],L=linkedSet(g);
   for(let a=0;a<g.units.length;a++)for(let b=a+1;b<g.units.length;b++){
     const A=g.units[a],B=g.units[b]; if(A.f===B.f)continue;
-    if(hexDist(g.map,A.c,B.c)<=Math.max(UNIT[A.t].aoc,UNIT[B.t].aoc))out.push([A,B]);
+    if(hexDist(g.map,A.c,B.c)<=Math.max(UNIT[A.t].aoc,UNIT[B.t].aoc)||L.has(linkKey(A.id,B.id)))out.push([A,B]);
   }
   return out;
 }
 
+const inContact=(M,a,b)=>a.f!==b.f&&hexDist(M,a.c,b.c)<=Math.max(UNIT[a.t].aoc,UNIT[b.t].aoc);
+const maxHp=u=>UNIT[u.t].hp;
+const hpOf=u=>u.hp==null?maxHp(u):u.hp;
+const retreatMp=t=>Math.floor(UNIT[t].mp*RETREAT_FRAC);
+function engagedSet(g){const s=new Set();for(const [a,b] of contactsNow(g)){s.add(a.id);s.add(b.id)}return s}
+// strength of unit u (standing on hex `at`) when hitting target tgt
+function strVs(M,u,tgt,at){
+  let s=UNIT[u.t].str;const t=M.cells[at==null?u.c:at].t;
+  if(u.t==='arm'&&t==='P')s*=1+TERRAIN_BONUS;
+  if(u.t==='inf'&&tgt.t==='arm'&&(t==='M'||t==='U'))s*=1+TERRAIN_BONUS;
+  return s;
+}
+
 // ================= carrying out orders =================
 function resolveTurn(g){
-  const M=g.map, alive=f=>g.players[f].alive, byId=new Map(g.units.map(u=>[u.id,u]));
-  const su=g.units.map(u=>[u.id,u.c,u.f,u.t,u.name]), so=g.owner.slice();
-  // each faction's queue of single-hex steps, in the order the instructions were entered
-  const q=g.players.map((p,f)=>alive(f)?(g.orders[f]||[]).flatMap(ins=>(ins.path||[]).map(h=>({u:ins.u,to:h}))):[]);
-  const ptr=q.map(()=>0), stopped=new Set(), used={}, steps=[], pairs=new Map();
-  for(let guard=0;guard<600;guard++){
+  const M=g.map, alive=f=>g.players[f].alive;
+  g.units.forEach(u=>{if(u.hp==null)u.hp=maxHp(u)});
+  const byId=new Map(g.units.map(u=>[u.id,u]));
+  const su=g.units.map(u=>[u.id,u.c,u.f,u.t,u.name,u.hp]), so=g.owner.slice();
+  // units already in battle at the start of the turn can only retreat
+  const engaged0=engagedSet(g), retreating=new Set(), links=linkedSet(g);
+  const near=(a,b)=>inContact(M,a,b)||(a.f!==b.f&&links.has(linkKey(a.id,b.id)));
+  const q=g.players.map((p,f)=>alive(f)?(g.orders[f]||[]).flatMap(ins=>(ins.path||[]).map(h=>({u:ins.u,to:h,r:!!ins.r}))):[]);
+  q.forEach(a=>a.forEach(s=>{if(s.r&&engaged0.has(s.u))retreating.add(s.u)}));
+  const ptr=q.map(()=>0), stopped=new Set(), used={}, steps=[], pairs=new Map(), lost=[];
+  engaged0.forEach(id=>{if(!retreating.has(id))stopped.add(id)});
+  for(let guard=0;guard<800;guard++){
     let moves=[];
     for(let f=0;f<q.length;f++){
       if(!alive(f))continue;
       while(ptr[f]<q[f].length){
         const s=q[f][ptr[f]++], u=byId.get(s.u);
         if(!u||u.f!==f||stopped.has(u.id)||!g.units.includes(u))continue;
-        const cost=stepCost(M,u,s.to);
-        if(cost==null||!M.cells[u.c].nb.includes(s.to)||(used[u.id]||0)+cost>UNIT[u.t].mp){stopped.add(u.id);continue}
-        moves.push({u,from:u.c,to:s.to,cost});break;
+        const isR=retreating.has(u.id), mp=isR?retreatMp(u.t):UNIT[u.t].mp, cost=stepCost(M,u,s.to);
+        if(cost==null||!M.cells[u.c].nb.includes(s.to)||(used[u.id]||0)+cost>mp){stopped.add(u.id);continue}
+        moves.push({u,from:u.c,to:s.to,cost,r:isR});break;
       }
     }
-    if(!moves.length)break;
-    const st={mv:[],ct:[],fl:[],gone:[],el:[]}, seen=new Set();
-    const touch=(a,b)=>{const k=Math.min(a.id,b.id)+'-'+Math.max(a.id,b.id);stopped.add(a.id);stopped.add(b.id);if(seen.has(k))return;seen.add(k);st.ct.push([a.id,b.id]);if(!pairs.has(k))pairs.set(k,[a,b])};
+    const fighting=g.units.some(a=>g.units.some(b=>near(a,b)));
+    if(!moves.length&&(!fighting||steps.length>=MIN_BATTLE_STEPS))break;
+    const st={mv:[],ct:[],fl:[],gone:[],el:[],dmg:[],hp:[]}, seen=new Set();
+    const touch=(a,b)=>{const k=Math.min(a.id,b.id)+'-'+Math.max(a.id,b.id);if(!retreating.has(a.id))stopped.add(a.id);if(!retreating.has(b.id))stopped.add(b.id);if(seen.has(k))return;seen.add(k);st.ct.push([a.id,b.id]);if(!pairs.has(k))pairs.set(k,[a,b])};
     // units of different factions swapping hexes meet head-on: neither moves
     const blocked=new Set();
-    for(const a of moves)for(const b of moves)if(a!==b&&a.u.f!==b.u.f&&a.from===b.to&&a.to===b.from){blocked.add(a);blocked.add(b);touch(a.u,b.u)}
+    for(const a of moves)for(const b of moves)if(a!==b&&!a.r&&!b.r&&a.u.f!==b.u.f&&a.from===b.to&&a.to===b.from){blocked.add(a);blocked.add(b);touch(a.u,b.u);links.add(linkKey(a.u.id,b.u.id))}
     moves=moves.filter(m=>!blocked.has(m));
-    for(const m of moves){m.u.c=m.to;used[m.u.id]=(used[m.u.id]||0)+m.cost;st.mv.push([m.u.id,m.from,m.to])}
-    // contact: within either unit's area of control
-    for(const m of moves)for(const e of g.units){if(e.f!==m.u.f&&hexDist(M,m.u.c,e.c)<=Math.max(UNIT[m.u.t].aoc,UNIT[e.t].aoc))touch(m.u,e)}
-    // a hex entered by units of only one faction becomes theirs
-    for(const m of moves){const h=m.to;const fs=new Set(g.units.filter(x=>x.c===h).map(x=>x.f));if(fs.size===1&&g.owner[h]!==m.u.f){st.fl.push([h,m.u.f,g.owner[h]]);g.owner[h]=m.u.f}}
+    for(const m of moves){m.u.c=m.to;used[m.u.id]=(used[m.u.id]||0)+m.cost;st.mv.push([m.u.id,m.from,m.to]);
+      // a unit that moves away breaks any head-on lock it was in
+      [...links].forEach(k=>{const [x,y]=k.split('-').map(Number);if(x===m.u.id||y===m.u.id)links.delete(k)})}
+    // a (non-retreating) unit that comes into contact stops, and so does the unit it meets
+    for(const m of moves)if(!m.r)for(const e of g.units){if(near(m.u,e))touch(m.u,e)}
+    // combat: every unit in contact (except ones retreating) hits its weakest enemy in contact; damage lands simultaneously
+    const hits=[];
+    for(const a of g.units){
+      if(retreating.has(a.id))continue;
+      const foes=g.units.filter(b=>near(a,b));if(!foes.length)continue;
+      foes.sort((x,y)=>x.hp-y.hp||x.id-y.id);const t=foes[0];
+      const k=DMG_SPREAD[0]+Math.random()*(DMG_SPREAD[1]-DMG_SPREAD[0]);
+      hits.push([a,t,Math.max(1,Math.round(strVs(M,a,t)*k))]);
+    }
+    const hitT=new Set();
+    hits.forEach(([a,t,d])=>{t.hp-=d;st.dmg.push([a.id,t.id,d]);hitT.add(t)});
+    hitT.forEach(t=>st.hp.push([t.id,Math.max(0,t.hp)]));
+    g.units.filter(u=>u.hp<=0).forEach(u=>{st.gone.push(u.id);byId.delete(u.id);lost.push([u.f,u.name,u.c])});
+    g.units=g.units.filter(u=>u.hp>0);
+    // a hex held by units of only one faction becomes theirs
+    const occ=new Map();g.units.forEach(u=>{if(!occ.has(u.c))occ.set(u.c,new Set());occ.get(u.c).add(u.f)});
+    occ.forEach((fs,h)=>{if(fs.size===1){const f=[...fs][0];if(g.owner[h]!==f){st.fl.push([h,f,g.owner[h]]);g.owner[h]=f}}});
     // a faction whose capital has been taken is eliminated
     for(let f=0;f<NF;f++)if(alive(f)&&g.owner[M.factions[f].cap]!==f)eliminate(g,f,st,byId);
     steps.push(st);
     if(g.players.filter(p=>p.alive).length<=1)break;
   }
+  const liveIds=new Set(g.units.map(u=>u.id));
+  g.links=[...links].map(k=>k.split('-').map(Number)).filter(([a,b])=>liveIds.has(a)&&liveIds.has(b));
   const end=encircle(g);
   // turn summary for the log
   const T=g.turn;
-  pairs.forEach(([a,b])=>glog(g,a.f,`Contact: ${g.players[a.f].name} ${a.name} and ${g.players[b.f].name} ${b.name} near ${M.countries[M.cells[a.c].c].name}`));
+  pairs.forEach(([a,b])=>glog(g,a.f,`Battle: ${g.players[a.f].name} ${a.name} engaged ${g.players[b.f].name} ${b.name} near ${M.countries[M.cells[a.c].c].name}`));
+  lost.forEach(([f,name,c])=>glog(g,f,`💥 ${g.players[f].name} ${name} was destroyed near ${M.countries[M.cells[c].c].name}`));
   const gainedBy={};end.forEach(([h,o,p])=>{const k=o+'>'+p;gainedBy[k]=(gainedBy[k]||0)+1});
   Object.entries(gainedBy).forEach(([k,n])=>{const [o,p]=k.split('>').map(Number);glog(g,o,`${g.players[o].name} encircled ${n} hex${n>1?'es':''} of ${p>=0?g.players[p].name+"'s land":'neutral land'}`)});
   for(let f=0;f<NF;f++){
@@ -387,7 +439,7 @@ function eliminate(g,f,st,byId){
   const by=g.owner[g.map.factions[f].cap];
   g.players[f].alive=false; st.el.push(f);
   g.owner.forEach((o,i)=>{if(o===f){st.fl.push([i,-1,f]);g.owner[i]=-1}});
-  g.units.filter(u=>u.f===f).forEach(u=>{st.gone.push(u.id);byId.delete(u.id)});
+  g.units.filter(u=>u.f===f).forEach(u=>{if(!st.gone.includes(u.id))st.gone.push(u.id);byId.delete(u.id)});
   g.units=g.units.filter(u=>u.f!==f);
   glog(g,by,`${by>=0?g.players[by].name:'Someone'} captured ${g.players[f].name}'s capital — ${g.players[f].name} is eliminated`);
 }
@@ -430,22 +482,43 @@ function reachMap(M,t,start,mp){
   return{dist,prev};
 }
 function pathFrom(rr,start,target){const p=[];let x=target;while(x!==start&&x!=null){p.unshift(x);x=rr.prev.get(x)}return p}
-// Simple bot: guard its capital when threatened, then send units to grab the most unowned land, enemy capitals first.
+// Simple bot: holds its capital, pulls losing units out of battle, and sends units to grab land,
+// only picking fights it expects to win (or that take an enemy capital).
 function aiOrders(g,f){
   const M=g.map,mine=g.units.filter(u=>u.f===f),cap=M.factions[f].cap,lim=g.limit[f],orders=[],used=new Set(),claimed=new Set();
-  const enemies=g.units.filter(u=>u.f!==f);
-  // distance from every land hex to the nearest hex we don't own (to push units toward the front)
-  const front=new Map(),q=[];
-  M.cells.forEach((c,i)=>{if(c.l&&g.owner[i]!==f){front.set(i,0);q.push(i)}});
-  while(q.length){const x=q.shift();for(const y of M.cells[x].nb)if(y>=0&&M.cells[y].l&&!front.has(y)){front.set(y,front.get(x)+1);q.push(y)}}
+  const enemies=g.units.filter(u=>u.f!==f),eng=engagedSet(g),avgK=(DMG_SPREAD[0]+DMG_SPREAD[1])/2;
+  const foesNear=(t,x)=>enemies.filter(e=>hexDist(M,x,e.c)<=Math.max(UNIT[t].aoc,UNIT[e.t].aoc));
+  // would unit u (with hp) standing on hex x beat these foes? compare steps-to-kill both ways
+  const fightOdds=(u,x,foes)=>{
+    if(!foes.length)return 99;
+    const inc=foes.reduce((s,e)=>s+strVs(M,e,u)*avgK,0);
+    const tgt=foes.slice().sort((a,b)=>hpOf(a)-hpOf(b))[0],out=strVs(M,u,tgt,x)*avgK;
+    return (hpOf(u)/Math.max(inc,0.1))/(hpOf(tgt)/Math.max(out,0.1)); // >1 means we expect to win
+  };
+  // 1. units already in battle: stay if winning or guarding the capital, otherwise retreat
+  for(const u of mine){
+    if(!eng.has(u.id))continue;
+    used.add(u.id);
+    const foes=contactsNow(g).filter(([a,b])=>a===u||b===u).map(([a,b])=>a===u?b:a);
+    if(u.c===cap||fightOdds(u,u.c,foes)>=1||orders.length>=lim)continue;
+    const rr=reachMap(M,u.t,u.c,retreatMp(u.t));let best=null;
+    rr.dist.forEach((d,h)=>{if(h===u.c)return;const dmin=Math.min(...enemies.map(e=>hexDist(M,h,e.c)));const sc=dmin*2+(g.owner[h]===f?1:0)+Math.random()*0.3;if(!best||sc>best.sc)best={sc,h}});
+    if(best)orders.push({u:u.id,path:pathFrom(rr,u.c,best.h),r:true});
+  }
+  // 2. keep an infantry unit on the capital; rush a unit back if an enemy is near and it's empty
   const threat=enemies.some(e=>hexDist(M,e.c,cap)<=UNIT[e.t].mp+1);
   const guard=mine.find(u=>u.c===cap);
-  if(threat&&!guard){
+  if(guard)used.add(guard.id);
+  else if(threat&&orders.length<lim){
     let best=null;
-    for(const u of mine){const rr=reachMap(M,u.t,u.c,UNIT[u.t].mp);if(rr.dist.has(cap)){const d=rr.dist.get(cap);if(!best||d<best.d)best={u,d,p:pathFrom(rr,u.c,cap)}}}
+    for(const u of mine){if(used.has(u.id))continue;const rr=reachMap(M,u.t,u.c,UNIT[u.t].mp);if(rr.dist.has(cap)){const d=rr.dist.get(cap);if(!best||d<best.d)best={u,d,p:pathFrom(rr,u.c,cap)}}}
     if(best&&best.p.length){orders.push({u:best.u.id,path:best.p});used.add(best.u.id)}
   }
-  if(guard&&(threat||mine.filter(u=>u.t==='inf').length>1)&&guard.t==='inf')used.add(guard.id);
+  // distance from every land hex to the nearest hex we don't own (pulls units toward the front)
+  const front=new Map(),fq=[];
+  M.cells.forEach((c,i)=>{if(c.l&&g.owner[i]!==f){front.set(i,0);fq.push(i)}});
+  while(fq.length){const x=fq.shift();for(const y of M.cells[x].nb)if(y>=0&&M.cells[y].l&&!front.has(y)){front.set(y,front.get(x)+1);fq.push(y)}}
+  // 3. expansion and attacks
   while(orders.length<lim){
     let pick=null;
     for(const u of mine){
@@ -453,11 +526,16 @@ function aiOrders(g,f){
       const rr=reachMap(M,u.t,u.c,UNIT[u.t].mp);
       rr.dist.forEach((d,h)=>{
         if(h===u.c)return;
-        const p=pathFrom(rr,u.c,h);let sc=0;
+        let p=pathFrom(rr,u.c,h),foes=[];
+        // the unit will stop at the first hex where it makes contact
+        for(let k=0;k<p.length;k++){const fs=foesNear(u.t,p[k]);if(fs.length){p=p.slice(0,k+1);foes=fs;break}}
+        const end=p[p.length-1];let sc=0;
         for(const x of p)if(g.owner[x]!==f&&!claimed.has(x))sc+=1;
-        const ef=M.factions.findIndex((F,k)=>F.cap===h&&k!==f&&g.players[k].alive);
-        if(ef>=0)sc+=60;else if(M.cells[h].cap>=0&&g.owner[h]!==f)sc+=4;
-        sc+=3/(1+(front.get(h)||0))+Math.random()*0.7;
+        const isEnemyCap=M.factions.some((F,k)=>F.cap===end&&k!==f&&g.players[k].alive);
+        if(foes.length){const odds=fightOdds(u,end,foes);sc+=odds>=1.15?6+(isEnemyCap?30:0):-12}
+        else if(isEnemyCap)sc+=60;
+        else if(M.cells[end].cap>=0&&g.owner[end]!==f)sc+=4;
+        sc+=3/(1+(front.get(end)||0))+Math.random()*0.7;
         if(!pick||sc>pick.sc)pick={u,p,sc};
       });
     }
@@ -476,7 +554,7 @@ function advance(g){
     if(g.players.some(p=>p.alive&&!p.ai))return;
   }
 }
-if(typeof module!=='undefined')module.exports={genWorld,newGame,resolveTurn,encircle,contactsNow,landCount,hexDist,stepCost,aiOrders,advance,UNIT,COST,NF};
+if(typeof module!=='undefined')module.exports={genWorld,newGame,resolveTurn,encircle,contactsNow,landCount,hexDist,stepCost,aiOrders,advance,engagedSet,inContact,retreatMp,UNIT,COST,NF};
 
 // ================= drawing =================
 const $=id=>document.getElementById(id);
@@ -527,6 +605,8 @@ function makeToken(u){
   el('rect',{x:-4.4,y:-3.1,width:8.8,height:6.2,rx:.9,fill:ucol(u.f),class:'ub'},g);
   if(u.t==='inf')el('path',{d:'M-4.4,-3.1L4.4,3.1M-4.4,3.1L4.4,-3.1',class:'usym'},g);
   else el('ellipse',{cx:0,cy:0,rx:2.9,ry:1.7,class:'usym'},g);
+  el('rect',{x:-4.4,y:3.7,width:8.8,height:1.3,rx:.4,class:'hpbg'},g);
+  g._bar=el('rect',{x:-4.4,y:3.7,width:8.8,height:1.3,rx:.4,class:'hpbar'},g);
   return g;
 }
 function drawUnits(list,selId){
@@ -539,6 +619,8 @@ function drawUnits(list,selId){
       const off=n>1?(k-(n-1)/2)*Math.min(3.4,9/n):0;
       g.style.transform=`translate(${(cell.x+off).toFixed(2)}px,${(cell.y+off*0.45).toFixed(2)}px)`;
       g.classList.toggle('sel',u.id===selId);
+      const fr=Math.max(0,Math.min(1,(u.hp==null?UNIT[u.t].hp:u.hp)/UNIT[u.t].hp));
+      g._bar.setAttribute('width',(8.8*fr).toFixed(2));g._bar.style.fill=fr>0.6?'#5ad16b':fr>0.3?'#f2c14e':'#e4573f';
     });
   }
   for(const [id,g] of R.units)if(!keep.has(id)){g.remove();R.units.delete(id)}
@@ -656,17 +738,18 @@ const dkey=f=>`wc.d.${GID}.${G.turn}.${f}`;
 function getDraft(f){
   if(!DRAFT[f]){
     const src=G.submitted[f]?G.orders[f]:LS.get(dkey(f),[]);
-    DRAFT[f]=(src||[]).filter(x=>x&&x.path&&x.path.length&&G.units.some(u=>u.id===x.u&&u.f===f)).map(x=>({u:x.u,path:x.path.slice()}));
+    DRAFT[f]=(src||[]).filter(x=>x&&x.path&&x.path.length&&G.units.some(u=>u.id===x.u&&u.f===f)).map(x=>x.r?{u:x.u,path:x.path.slice(),r:true}:{u:x.u,path:x.path.slice()});
   }
   return DRAFT[f];
 }
 function saveDraft(f){LS.set(dkey(f),getDraft(f))}
+const mpFor=(u,E)=>E.has(u.id)?retreatMp(u.t):UNIT[u.t].mp;
 function planInfo(f){
-  const d=getDraft(f),pos={},used={},labels=[],segs=[];
+  const d=getDraft(f),pos={},used={},labels=[],segs=[],E=engagedSet(G);
   G.units.filter(u=>u.f===f).forEach(u=>{pos[u.id]=u.c;used[u.id]=0});
   let n=0;
   d.forEach(ins=>{const u=G.units.find(x=>x.id===ins.u);const pts=[pos[ins.u]];ins.path.forEach(h=>{used[ins.u]+=COST[u.t][G.map.cells[h].t];labels.push([h,++n]);pts.push(h)});pos[ins.u]=pts[pts.length-1];segs.push(pts)});
-  return{pos,used,labels,segs,ordered:new Set(d.map(x=>x.u))};
+  return{pos,used,labels,segs,E,ordered:new Set(d.map(x=>x.u))};
 }
 function reachFrom(t,start,mp){
   const M=G.map,dist=new Map([[start,0]]),prev=new Map(),open=[start];
@@ -685,7 +768,7 @@ function pickAs(){
 function addSteps(f,uid,path){
   const d=getDraft(f),last=d[d.length-1];
   if(UI.seg&&last&&last.u===uid)last.path.push(...path);
-  else{const ordered=new Set(d.map(x=>x.u));if(!ordered.has(uid)&&ordered.size>=G.limit[f])return toast(`You can give orders to ${G.limit[f]} units per turn`);d.push({u:uid,path:path.slice()})}
+  else{const ordered=new Set(d.map(x=>x.u));if(!ordered.has(uid)&&ordered.size>=G.limit[f])return toast(`You can give orders to ${G.limit[f]} units per turn`);d.push(engagedSet(G).has(uid)?{u:uid,path:path.slice(),r:true}:{u:uid,path:path.slice()})}
   UI.seg=true;saveDraft(f);
 }
 function onCellTap(i){
@@ -695,7 +778,7 @@ function onCellTap(i){
   const f=UI.as,P=planInfo(f);
   if(UI.sel!=null){
     const u=G.units.find(x=>x.id===UI.sel);
-    if(u){const end=P.pos[u.id],left=UNIT[u.t].mp-P.used[u.id];
+    if(u){const end=P.pos[u.id],left=mpFor(u,P.E)-P.used[u.id];
       if(i!==end){const rr=reachFrom(u.t,end,left);if(rr.dist.has(i)){addSteps(f,u.id,pathTo(rr,end,i));render();return}}}
   }
   const here=G.units.filter(u=>u.f===f&&P.pos[u.id]===i);
@@ -704,7 +787,7 @@ function onCellTap(i){
   render();
 }
 async function submitOrders(){
-  const f=UI.as,turn=G.turn,d=getDraft(f).map(x=>({u:x.u,path:x.path.slice()}));
+  const f=UI.as,turn=G.turn,d=getDraft(f).map(x=>x.r?{u:x.u,path:x.path.slice(),r:true}:{u:x.u,path:x.path.slice()});
   UI.busy=true;UI.sel=null;UI.seg=false;render();
   const ok=await mutate(g=>{
     if(g.phase!=='orders'||g.turn!==turn||!g.players[f].alive||g.players[f].uid!==ME)return false;
@@ -740,11 +823,18 @@ function playPause(){
 function rpStep(d){if(!UI.rp)return;stopPlay();const n=G.replay.steps.length;UI.rp.i=Math.max(-1,Math.min(n,UI.rp.i+d));render()}
 function rpView(){
   const r=G.replay,i=UI.rp.i,pos=new Map(),meta=new Map(),owner=r.so.slice(),gone=new Set();let ct=[];
-  r.su.forEach(([id,c,f,t,name])=>{pos.set(id,c);meta.set(id,{id,f,t,name})});
-  for(let k=0;k<=Math.min(i,r.steps.length-1);k++){const st=r.steps[k];st.mv.forEach(([u,a,b])=>pos.set(u,b));st.fl.forEach(([h,o])=>owner[h]=o);st.gone.forEach(u=>gone.add(u));if(k===i)ct=st.ct}
-  if(i>=r.steps.length)r.end.forEach(([h,o])=>owner[h]=o);
-  const units=[];pos.forEach((c,id)=>{if(!gone.has(id))units.push({...meta.get(id),c})});
-  return{owner,units,ct,pos,meta};
+  const hp=new Map();let dmg=[];
+  r.su.forEach(([id,c,f,t,name,h])=>{pos.set(id,c);meta.set(id,{id,f,t,name});hp.set(id,h==null?UNIT[t].hp:h)});
+  for(let k=0;k<=Math.min(i,r.steps.length-1);k++){const st=r.steps[k];st.mv.forEach(([u,a,b])=>pos.set(u,b));(st.hp||[]).forEach(([u,h])=>hp.set(u,h));st.fl.forEach(([h,o])=>owner[h]=o);if(k===i){ct=st.ct;dmg=st.dmg||[]}st.gone.forEach(u=>{if(k<i)gone.add(u)})}
+  if(i>=r.steps.length){r.end.forEach(([h,o])=>owner[h]=o);r.steps.forEach(st=>st.gone.forEach(u=>gone.add(u)))}
+  const units=[];pos.forEach((c,id)=>{if(!gone.has(id))units.push({...meta.get(id),c,hp:hp.get(id)})});
+  return{owner,units,ct,pos,meta,dmg};
+}
+// pairs of units in contact in a replay frame (area of control, plus head-on locks from the current state)
+function contactPairsAt(v){
+  const out=[],us=v.units;
+  for(let a=0;a<us.length;a++)for(let b=a+1;b<us.length;b++){const A=us[a],B=us[b];if(A.f!==B.f&&hexDist(G.map,A.c,B.c)<=Math.max(UNIT[A.t].aoc,UNIT[B.t].aoc))out.push([A.id,B.id])}
+  return out;
 }
 function rpText(v){
   const r=G.replay,i=UI.rp.i,n=r.steps.length,nm=id=>{const m=v.meta.get(id);return m?`${G.players[m.f].name} ${m.name}`:'?'};
@@ -752,8 +842,11 @@ function rpText(v){
   if(i>=n){const k=r.end.length;return k?`End of turn: ${k} encircled hex${k>1?'es':''} changed hands.`:'End of turn.'}
   const st=r.steps[i],parts=[];
   st.mv.forEach(([u,a,b])=>parts.push(`${nm(u)} → ${G.map.countries[G.map.cells[b].c].name}`));
-  st.ct.forEach(([a,b])=>parts.push(`⚔ Contact: ${nm(a)} & ${nm(b)}`));
+  st.ct.forEach(([a,b])=>parts.push(`⚔ Battle: ${nm(a)} vs ${nm(b)}`));
+  (st.dmg||[]).forEach(([a,b,d])=>parts.push(`${nm(a)} hits ${nm(b)} −${d}`));
+  st.gone.forEach(u=>{if(!st.el.length)parts.push(`💥 ${nm(u)} destroyed`)});
   st.el.forEach(f=>parts.push(`☠ ${G.players[f].name} eliminated`));
+  if(!st.mv.length&&!parts.length)parts.push('…');
   return parts.join(' · ');
 }
 
@@ -807,8 +900,8 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(
 function render(){
   if(!G||!R)return;
   const M=G.map;
-  let owner=G.owner,units=G.units,ct=contactsNow(G).map(([a,b])=>[a.id,b.id]),posOf=id=>{const u=G.units.find(x=>x.id===id);return u?u.c:null};
-  if(UI.rp){const v=rpView();owner=v.owner;units=v.units;ct=v.ct;posOf=id=>v.pos.get(id)}
+  let owner=G.owner,units=G.units,ct=contactsNow(G).map(([a,b])=>[a.id,b.id]),posOf=id=>{const u=G.units.find(x=>x.id===id);return u?u.c:null},dmg=[];
+  if(UI.rp){const v=rpView();owner=v.owner;units=v.units;ct=v.units.length?contactPairsAt(v):[];dmg=v.dmg;posOf=id=>v.pos.get(id)}
   M.cells.forEach((c,i)=>{if(c.l)R.poly[i].style.fill=ownerFill(owner[i],c.t)});
   let d='';M.cells.forEach((c,i)=>{if(!c.l)return;for(let k=0;k<6;k++){const j=c.nb[k];if(j>i&&M.cells[j].l&&owner[j]!==owner[i])d+=edgeSeg(c,k)}});R.own.setAttribute('d',d);
   // planned moves of the faction being plotted
@@ -821,13 +914,15 @@ function render(){
   }
   // reachable hexes for the selected unit
   let rd='';
-  if(plotting&&canPlot()&&UI.sel!=null){const u=G.units.find(x=>x.id===UI.sel);if(u){const end=plan.pos[u.id],rr=reachFrom(u.t,end,UNIT[u.t].mp-plan.used[u.id]);rr.dist.forEach((v,h)=>{if(h!==end)rd+=`M${hexPts(M.cells[h]).replace(/ /g,'L')}Z`})}}
+  if(plotting&&canPlot()&&UI.sel!=null){const u=G.units.find(x=>x.id===UI.sel);if(u){const end=plan.pos[u.id],rr=reachFrom(u.t,end,mpFor(u,plan.E)-plan.used[u.id]);rr.dist.forEach((v,h)=>{if(h!==end)rd+=`M${hexPts(M.cells[h]).replace(/ /g,'L')}Z`})}}
   R.reach.setAttribute('d',rd);
   // unit tokens (shown at planned positions while plotting)
   const shown=units.map(u=>plan&&u.f===UI.as&&plan.pos[u.id]!=null?{...u,c:plan.pos[u.id]}:u);
   drawUnits(shown,plotting?UI.sel:null);
   R.fx.innerHTML='';
-  ct.forEach(([a,b])=>{const pa=posOf(a),pb=posOf(b);if(pa==null||pb==null)return;const A=M.cells[pa],Bc=M.cells[pb];el('text',{x:(A.x+Bc.x)/2,y:(A.y+Bc.y)/2+1.8,class:'clash'},R.fx).textContent='⚔'});
+  const swords=new Set();
+  ct.forEach(([a,b])=>{const pa=posOf(a),pb=posOf(b);if(pa==null||pb==null)return;const k=Math.min(pa,pb)+'-'+Math.max(pa,pb);if(swords.has(k))return;swords.add(k);const A=M.cells[pa],Bc=M.cells[pb];el('text',{x:(A.x+Bc.x)/2,y:(A.y+Bc.y)/2+1.6,class:'clash'},R.fx).textContent='⚔'});
+  const dmgAt={};dmg.forEach(([a,b,d])=>{const p=posOf(b);if(p==null)return;const k=dmgAt[p]=(dmgAt[p]||0)+1;const c=M.cells[p];el('text',{x:c.x+3,y:c.y-3.5-k*3.4,class:'dmgn'},R.fx).textContent='−'+d});
   renderTop();renderPanel();
 }
 function renderTop(){
@@ -844,7 +939,7 @@ function infoHTML(){
   const k=G.map.countries[c.c],o=G.owner[i],tags=[];
   if(G.map.factions.some(f=>f.cap===i))tags.push('★ faction capital');else if(c.cap>=0)tags.push('● capital');
   if(c.port)tags.push('⚓ port');
-  const us=G.units.filter(u=>u.c===i).map(u=>`${G.players[u.f].name} ${u.name}`);
+  const us=G.units.filter(u=>u.c===i).map(u=>`${G.players[u.f].name} ${u.name} (${hpOf(u)}/${UNIT[u.t].hp} HP)`);
   return`<div class="info"><b>${esc(k.name)}</b> · ${TERR[c.t]} (inf ${COST.inf[c.t]} / armd ${COST.arm[c.t]} MP)${tags.length?' · '+tags.join(' · '):''} · ${o>=0?`held by <span style="color:${pcol(o)}">${esc(G.players[o].name)}</span>`:'<span style="color:#b9b3a3">neutral</span>'}${us.length?'<br>'+esc(us.join(', ')):''}</div>`;
 }
 function renderPanel(){
@@ -874,11 +969,12 @@ function renderPanel(){
       <div class="row"><button data-act="edit" ${UI.busy?'disabled':''}>Edit my orders</button>${G.replay?'<button data-act="replay">Watch last turn</button>':''}</div>`;
     }else{
       const P=planInfo(f),d=getDraft(f),us=G.units.filter(u=>u.f===f);
-      const chips=us.map(u=>`<button class="uchip ${UI.sel===u.id?'on':''} ${P.ordered.has(u.id)?'ord':''}" data-act="selu" data-id="${u.id}"><span class="usy">${u.t==='inf'?'✕':'⬭'}</span>${esc(u.name.replace('Infantry','Inf').replace('Armoured','Armd'))}<small>${UNIT[u.t].mp-P.used[u.id]}/${UNIT[u.t].mp} MP</small></button>`).join('');
-      const selU=UI.sel!=null?us.find(u=>u.id===UI.sel):null;
-      const msg=selU?`Moving <b>${esc(selU.name)}</b>: tap a highlighted hex (${UNIT[selU.t].mp-P.used[selU.id]} MP left). Tap <b>Done</b> to switch units.`
-        :`Turn ${G.turn} of ${G.maxTurns}: tap a unit to plot its path. Units without orders stay put.`;
-      const list=d.length?`<div class="ins">${d.map((x,k)=>{const u=us.find(z=>z.id===x.u);return`<span>${k+1}. ${esc(u?u.name:'?')} → ${x.path.length} hex${x.path.length>1?'es':''}</span>`}).join('')}</div>`:'';
+      const chips=us.map(u=>{const inB=P.E.has(u.id),mx=mpFor(u,P.E);return`<button class="uchip ${UI.sel===u.id?'on':''} ${P.ordered.has(u.id)?'ord':''} ${inB?'inb':''}" data-act="selu" data-id="${u.id}"><span class="usy">${u.t==='inf'?'✕':'⬭'}${inB?' ⚔ in battle':''}</span>${esc(u.name.replace('Infantry','Inf').replace('Armoured','Armd'))}<small>${hpOf(u)}/${UNIT[u.t].hp} HP · ${mx-P.used[u.id]}/${mx} MP</small></button>`}).join('');
+      const selU=UI.sel!=null?us.find(u=>u.id===UI.sel):null,selB=selU&&P.E.has(selU.id);
+      const msg=selU?(selB?`<b>${esc(selU.name)}</b> is in battle. It can only <b>retreat</b> (${mpFor(selU,P.E)-P.used[selU.id]} MP left): tap a highlighted hex, or leave it to keep fighting.`
+          :`Moving <b>${esc(selU.name)}</b>: tap a highlighted hex (${UNIT[selU.t].mp-P.used[selU.id]} MP left). Tap <b>Done</b> to switch units.`)
+        :`Turn ${G.turn} of ${G.maxTurns}: tap a unit to plot its path. Units without orders stay put${P.E.size&&us.some(u=>P.E.has(u.id))?', and units in battle keep fighting':''}.`;
+      const list=d.length?`<div class="ins">${d.map((x,k)=>{const u=us.find(z=>z.id===x.u);return`<span>${k+1}. ${esc(u?u.name:'?')} ${x.r?'↩ retreats':'→'} ${x.path.length} hex${x.path.length>1?'es':''}</span>`}).join('')}</div>`:'';
       h=`${asRow}<div class="msg sm">${msg}</div>
       <div class="uchips">${chips}</div>
       <div class="sub">${P.ordered.size}/${G.limit[f]} units ordered${d.length?` · ${d.reduce((s,x)=>s+x.path.length,0)} steps`:''}</div>${list}${infoHTML()}
@@ -910,7 +1006,12 @@ function openMenu(){
   <table class="key"><tr><th></th><th>Terrain</th><th>Inf MP</th><th>Armd MP</th></tr>
   <tr><td>—</td><td>Plains</td><td>1</td><td>1</td></tr><tr><td>▦</td><td>Urban</td><td>1</td><td>1</td></tr>
   <tr><td>▲</td><td>Mountains</td><td>2</td><td>2</td></tr><tr><td>≈</td><td>Swamp</td><td>2</td><td>3</td></tr></table>
-  <p class="sub">Infantry ✕ has 3 MP and controls only its own hex. Armour ⬭ has 5 MP and controls its hex plus the hexes around it. Grey land is neutral: no one owns it until a unit moves through. ★ faction capital (lose it and you're out) · ● country capital · ⚓ port · ⚔ units in contact (battles arrive in stage 2). On the score bar, ✓ means that player's orders are in, … means they're still planning, and 🤖 is a computer player.</p>
+  <h3>Units &amp; battles</h3>
+  <table class="key"><tr><th></th><th>MP</th><th>Strength</th><th>HP</th><th>Retreat MP</th></tr>
+  <tr><td>✕ Infantry</td><td>${UNIT.inf.mp}</td><td>${UNIT.inf.str}</td><td>${UNIT.inf.hp}</td><td>${retreatMp('inf')}</td></tr>
+  <tr><td>⬭ Armour</td><td>${UNIT.arm.mp}</td><td>${UNIT.arm.str}</td><td>${UNIT.arm.hp}</td><td>${retreatMp('arm')}</td></tr></table>
+  <p class="sub">When enemies make contact, both stop and a battle starts. Every step, each unit in battle hits the weakest enemy it's touching for about its strength (between half and 1½×), and units at 0 HP are destroyed. Armour gets +50% on plains; infantry gets +50% against armour in mountains or urban hexes. While a battle is going, each turn lasts at least ${MIN_BATTLE_STEPS} steps. Units in battle can't move except to retreat (half MP), and retreating units don't hit back. The bar under each unit shows its HP.</p>
+  <p class="sub">Infantry ✕ has 3 MP and controls only its own hex. Armour ⬭ has 5 MP and controls its hex plus the hexes around it. Grey land is neutral: no one owns it until a unit moves through. ★ faction capital (lose it and you're out) · ● country capital · ⚓ port · ⚔ battle in progress. On the score bar, ✓ means that player's orders are in, … means they're still planning, and 🤖 is a computer player.</p>
   <h3>Countries</h3>${cs}
   <h3>War log</h3><div class="log">${G.log.slice(-80).reverse().map(logLine).join('')}</div>
   <div class="row"><button data-act="home">All my games</button><button data-act="openSetup">New game</button></div>
