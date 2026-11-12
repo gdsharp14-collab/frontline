@@ -30,7 +30,7 @@ A WWII-era hex strategy wargame for me and 2 friends to play on our **Android ph
 4. **Release.** Claude saves the new version to GitHub with a note, and updates the Project copies and the docs. The live game updates by itself.
 5. **Undo if needed.** If a version breaks something, Claude can put the previous version back.
 
-Until GitHub is connected to Claude, step 4 is manual: Claude sends me `index.html` and I upload it to GitHub (**Add file → Upload files → Commit changes**).
+Each version's GitHub code is recorded in the changelog, and the version number goes in the note saved with it on GitHub.
 
 ## Version numbers
 - **v0.X.Y**: X is the build stage, Y counts fixes and tweaks within it. Example: v0.3.1 is stage 3 with one tweak.
@@ -40,8 +40,8 @@ Until GitHub is connected to Claude, step 4 is manual: Claude sends me `index.ht
 ## Roadmap
 | Phase | Goal | Status |
 |---|---|---|
-| 0. Clean-up | One set of docs, GitHub as the master copy, version history recorded | **In progress** (Nov 12) |
-| 1. Simplify the rules | Cut the rules down to what's fun and playable on a phone | Next |
+| 0. Clean-up | One set of docs, GitHub as the master copy, version history recorded | **Done** (Nov 12) |
+| 1. Simplify the rules | Cut the rules down to what's fun and playable on a phone | **Next** |
 | 2. Go live | Put the latest version on GitHub, play a solo game against the computer, then a real game with friends. Fix what breaks | Not started |
 | 3. Tune → v1.0 | Approve or change the numbers, settle the open decisions | Not started |
 | 4. Add-ons, one at a time | Each one played before the next starts. Likely order: "your turn" notifications, ships, aircraft, technology | Not started |
@@ -52,7 +52,7 @@ Fog of war and hidden units are parked until we know whether they're possible: t
 - **Built:** stages 1–3 (map and movement, combat, economy). See the changelog.
 - **Live game is one version behind:** GitHub has v0.3.0. v0.3.1 (4× hit points, for longer battles) is in the Project but hasn't been uploaded yet.
 - **Never played on real phones.** All testing so far used simulated phones.
-- **GitHub isn't connected to Claude yet**, so for now releases are manual.
+- **GitHub is connected to Claude** (Nov 12), so Claude saves each release there directly. No more manual uploads.
 
 ## Technical details
 - **Firebase:** free Spark plan, Firestore database plus anonymous sign-in. The web config (apiKey etc.) is inside `index.html`. These values aren't secret; the database rules control access.
