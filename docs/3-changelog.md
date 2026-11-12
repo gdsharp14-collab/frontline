@@ -6,14 +6,23 @@
 Agreed changes go here until I say "build". Each one is cleared once it's built.
 
 ### Combat: back to Risk dice (agreed Nov 12, 2026), planned as v0.4.0
+**Armies**
 - **One army type.** Armour is removed. Units become plain army counts in a hex, like Risk, so hit points, strength and reach go away.
-- **No terrain combat bonuses** for now.
+- **Moving:** an army moves up to 3 hexes per turn. You can split a stack and move any number of its armies, as in Risk. Each group you move counts as one of your 3 orders.
+
+**Terrain removed entirely**
+- No mountains, swamps or cities: no movement costs, no combat effects and nothing drawn on the map. Every land hex costs 1 to enter.
+- Resource and factory hexes are placed without regard to terrain.
+
+**Battles**
 - **Move first, then fight.** All movement plays out first. An army that moves into a hex with enemy armies stops there. Then every battle is rolled.
-- **Defender:** the faction that held the hex at the start of the turn, if it still has armies there. The defender rolls up to 2 dice and the attacker up to 3, never more dice than armies. Compare the highest dice, then the next highest; the loser of each pair loses 1 army, and the defender wins ties.
-- **Meeting battles** (no defender, e.g. two factions entering an empty or neutral hex): both roll up to 3 dice, and ties mean no loss.
+- **Dice:** compare the highest dice, then the next highest. The loser of each pair loses 1 army. Nobody rolls more dice than they have armies.
+- **Defended battles:** the faction that held the hex at the start of the turn, if it still has armies there, is the defender. The defender rolls up to 2 dice and the attacker up to 3. **The defender wins ties.**
+- **Meeting battles** (no defender, e.g. two factions entering an empty or neutral hex): both roll up to 3 dice. **In a tie, both lose 1 army.**
+- **Armies that cross paths** (each moving into the hex the other is leaving, on the same step): they collide, both stop in the hex they started that step from, and fight a meeting battle on the border between them (3 dice each, a tie costs both 1 army).
 - **3 rounds per turn.** If both sides still have armies, the battle carries over to the next turn.
 - **Next turn, armies in battle can:** hold (no order, keep fighting), get reinforced (more armies move in), or retreat 1 hex. Retreats happen before that turn's battle rounds.
-- **Three-way battles:** every pair of factions rolls against each other each round. The defender rolls up to 2 dice against each attacker; the attackers roll up to 3 dice against the defender and up to 3 against each other (ties between them mean no loss). All losses in a round land at the same time.
+- **Three-way battles:** every pair of factions rolls against each other each round. The defender rolls up to 2 dice against each attacker; the attackers roll up to 3 dice against the defender and up to 3 against each other (between the two attackers, a tie costs both 1 army). All losses in a round land at the same time.
 
 ## Versions
 Newest first. "GitHub" is the saved version on GitHub; the live game always shows the newest one there.
