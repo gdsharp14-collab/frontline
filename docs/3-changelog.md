@@ -5,7 +5,15 @@
 ## Waiting for next build
 Agreed changes go here until I say "build". Each one is cleared once it's built.
 
-- *Nothing agreed yet.* (Simplifying the rules is the next discussion.)
+### Combat: back to Risk dice (agreed Nov 12, 2026), planned as v0.4.0
+- **One army type.** Armour is removed. Units become plain army counts in a hex, like Risk, so hit points, strength and reach go away.
+- **No terrain combat bonuses** for now.
+- **Move first, then fight.** All movement plays out first. An army that moves into a hex with enemy armies stops there. Then every battle is rolled.
+- **Defender:** the faction that held the hex at the start of the turn, if it still has armies there. The defender rolls up to 2 dice and the attacker up to 3, never more dice than armies. Compare the highest dice, then the next highest; the loser of each pair loses 1 army, and the defender wins ties.
+- **Meeting battles** (no defender, e.g. two factions entering an empty or neutral hex): both roll up to 3 dice, and ties mean no loss.
+- **3 rounds per turn.** If both sides still have armies, the battle carries over to the next turn.
+- **Next turn, armies in battle can:** hold (no order, keep fighting), get reinforced (more armies move in), or retreat 1 hex. Retreats happen before that turn's battle rounds.
+- **Three-way battles:** every pair of factions rolls against each other each round. The defender rolls up to 2 dice against each attacker; the attackers roll up to 3 dice against the defender and up to 3 against each other (ties between them mean no loss). All losses in a round land at the same time.
 
 ## Versions
 Newest first. "GitHub" is the saved version on GitHub; the live game always shows the newest one there.
