@@ -31,8 +31,8 @@ Agreed changes go here until I say "build". Each one is cleared once it's built.
 - **Armies cost $10.** On your turn, recruit as many as you can afford, at any capital hex you own, even if you don't hold the rest of that country. Spread them across as many capitals as you like. New armies appear on their capital at the end of the turn.
 
 **Map variety**
-- Every map gets **2–3 inland lakes** (4–7 hexes each, toward the middle of the map; at least one per map) and **2–3 impassable mountain ranges** (chains of 4–7 black hexes).
-- Lakes and mountains are placed first, and countries grow around them, so country sizes stay as before.
+- Every map gets **2–3 inland lakes** (4–7 hexes each, toward the middle of the map; at least one per map). Lakes are placed first and countries grow around them.
+- Every map also gets **3–5 clumps of impassable mountains** (black hexes, 1–4 per clump, any shape). They're carved out of the land after the countries have grown, so most sit inland. Any faction country that loses hexes to them is topped back up, so starting land stays equal; neutral countries keep at least 6 hexes.
 - Neither can be entered, owned or counted for income or victory.
 - Mountains that end up with no land beside them become ocean, lakes that end up touching the ocean become bays (ocean), and small pockets of sea enclosed by land become small lakes.
 - **Equal starting land:** every faction starts with exactly the same number of hexes (one total per map, 34–40), though its three countries can be sized differently.
