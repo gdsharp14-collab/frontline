@@ -8,7 +8,8 @@ Agreed changes go here until I say "build". Each one is cleared once it's built.
 ### Combat: back to Risk dice (agreed Nov 12, 2026), planned as v0.4.0
 **Armies**
 - **One army type.** Armour is removed. Units become plain army counts in a hex, like Risk, so hit points, strength and reach go away.
-- **Moving:** an army moves up to 3 hexes per turn. You can split a stack and move any number of its armies, as in Risk. Each group you move counts as one of your 3 orders.
+- **No order limit:** every army can move every turn. An army is everything in one hex and moves together; you can split off any number to move separately, as in Risk. Your groups that end in the same hex merge. Armies with no orders stay put.
+- **Moving:** up to 3 hexes through land you own, but **entering a hex you don't own (neutral or enemy) ends the move**. So each army takes at most 1 new hex per turn, while moving behind your own lines is fast.
 
 **Terrain removed entirely**
 - No mountains, swamps or cities: no movement costs, no combat effects and nothing drawn on the map. Every land hex costs 1 to enter.
