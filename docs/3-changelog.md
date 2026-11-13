@@ -35,6 +35,12 @@ Agreed changes go here until I say "build". Each one is cleared once it's built.
 - Lakes and mountains are placed first, and countries grow around them, so country sizes stay as before.
 - Neither can be entered, owned or counted for income or victory.
 - Mountains that end up with no land beside them become ocean, and lakes that end up touching the ocean become bays (ocean).
+- **Equal starting land:** every faction starts with exactly the same number of hexes (one total per map, 34–40), though its three countries can be sized differently.
+- **Faction capitals at the back:** each ★ capital is placed on the hex of its home country farthest from the other factions' land (on average about 30% farther apart than before).
+
+**Ports removed; encirclement simplified**
+- Ports are removed: they no longer do anything now that supply lines are gone.
+- A group of hexes switches to an enemy at the end of the turn if every **land** hex around it belongs to that one enemy. Ocean, lakes and mountains count as walls. It still doesn't switch if there are armies inside, and capitals never switch this way.
 
 **Start of the game**
 - Each faction starts with **10 armies**, placed wherever it likes within its home country (the country with its ★ faction capital).
