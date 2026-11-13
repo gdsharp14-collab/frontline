@@ -1,6 +1,6 @@
 # Warsea Conquest — Project Outline
 
-*Last updated: November 12, 2026 · Current version: **v0.3.1** (live game is v0.3.0, see Status)*
+*Last updated: November 12, 2026 · Current version: **v0.4.0** (live)*
 
 ## What this is
 A WWII-era hex strategy wargame for me and 2 friends to play on our **Android phones**, from different places. Everyone submits orders, then the turn plays out for all three at once. Turns happen whenever we're all ready.
@@ -41,23 +41,22 @@ Each version's GitHub code is recorded in the changelog, and the version number 
 | Phase | Goal | Status |
 |---|---|---|
 | 0. Clean-up | One set of docs, GitHub as the master copy, version history recorded | **Done** (Nov 12) |
-| 1. Simplify the rules | Cut the rules down to what's fun and playable on a phone | **Next** |
-| 2. Go live | Put the latest version on GitHub, play a solo game against the computer, then a real game with friends. Fix what breaks | Not started |
-| 3. Tune → v1.0 | Approve or change the numbers, settle the open decisions | Not started |
+| 1. Simplify the rules | Cut the rules down to what's fun and playable on a phone | **Done** (v0.4.0, Nov 12) |
+| 2. Go live | Play a solo game against the computer, then a real game with friends. Fix what breaks | **Next** |
+| 3. Tune → v1.0 | Adjust the numbers (battle rounds, starting armies, costs, income) after real games | Not started |
 | 4. Add-ons, one at a time | Each one played before the next starts. Likely order: "your turn" notifications, ships, aircraft, technology | Not started |
 
 Fog of war and hidden units are parked until we know whether they're possible: they may need code on a server, and I don't know whether the free Firebase plan allows that.
 
 ## Status (Nov 12, 2026)
-- **Built:** stages 1–3 (map and movement, combat, economy). See the changelog.
-- **Live game is one version behind:** GitHub has v0.3.0. v0.3.1 (4× hit points, for longer battles) is in the Project but hasn't been uploaded yet.
-- **Never played on real phones.** All testing so far used simulated phones.
-- **GitHub is connected to Claude** (Nov 12), so Claude saves each release there directly. No more manual uploads.
+- **v0.4.0 is live:** the simplified, Risk-style rules. See the game rules doc and the changelog.
+- **GitHub is connected to Claude**, so Claude saves each release there directly.
+- **Never played on real phones yet.** All testing so far used simulated phones.
 
 ## Technical details
 - **Firebase:** free Spark plan, Firestore database plus anonymous sign-in. The web config (apiKey etc.) is inside `index.html`. These values aren't secret; the database rules control access.
 - **Firebase SDK:** loaded from `https://www.gstatic.com/firebasejs/13.1.0/`.
-- **Saved games:** one Firestore document per game at `games/{gameId}`, holding `{v:2, rev, state}`, where `state` is the whole game as JSON text. Every change is a transaction. The last human to submit plays out the turn on their own phone.
+- **Saved games:** one Firestore document per game at `games/{gameId}`, holding `{v:3, rev, state}`, where `state` is the whole game as JSON text. Every change is a transaction. The last human to submit plays out the turn on their own phone.
 - **Testing:** adding `?mock` to the game address uses a test-only stand-in for Firebase, shared between tabs in one browser.
 - **Firestore rules** that should be published:
 

@@ -1,111 +1,96 @@
 # Warsea Conquest — Game Rules
 
-*Last updated: November 12, 2026 · Matches game version **v0.3.1***
+*Last updated: November 12, 2026 · Matches game version **v0.4.0***
 
-This file describes the game as it's actually built, plus ideas that aren't built yet (section 10). Numbers marked **(starting value)** are Claude's first guesses and still need my approval.
+This file describes the game as it's actually built, plus ideas that aren't built yet (section 10).
 
 ---
 
 ## 1. The basics
 - **3 factions:** Red, Blue and Green. Any seat can be played by the computer.
-- **50 turns.** Everyone plans orders at the same time, then the turn plays out step by step for everyone together.
+- **50 turns.** Everyone plans orders at the same time, then the turn plays out for everyone together.
 - **Winning:** most land hexes after turn 50, or the last faction left. Ties stay ties.
-- **Elimination:** lose your faction capital (★) and you're out. Your hexes become neutral, your units disband and your stockpile is lost.
+- **Elimination:** lose your ★ faction capital and you're out. Your hexes become neutral, your armies disband and your money is lost.
 
 ## 2. The map
-- A new random hex map every game: 21 × 23 hexes with an ocean border, about 165–190 land hexes.
-- **Each faction starts with:**
-  - a large home country (15–20 hexes) containing its ★ faction capital,
-  - two small countries next to it (8–12 hexes).
-- **6 neutral countries** (grey, 8–12 hexes, no units), 2 between each pair of factions. Every pair of factions has at least one neutral country touching both.
-- Every country has a capital (●). Coastal countries get ports (⚓).
-- **Terrain:** about 18% mountains, 12% swamp, capitals and a few other hexes urban, the rest plains.
+A new random hex map every game (21 × 23 hexes with an ocean border, about 160–180 land hexes).
 
-| Terrain | Infantry move cost | Armour move cost | Combat effect |
-|---|---|---|---|
-| Plains | 1 | 1 | Armour +50% strength |
-| Urban | 1 | 1 | Infantry +50% against armour |
-| Mountains | 2 | 2 | Infantry +50% against armour |
-| Swamp | 2 | 3 | — |
-| Ocean | can't enter | can't enter | — |
+- **Each faction starts with** a home country (with its ★ capital) at the back of the map, and two small countries in front of it, toward the middle, as a buffer.
+  - A home country never borders an enemy faction's country.
+  - Each faction's three countries form one connected territory.
+  - **Every faction starts with exactly the same number of hexes** (34–40, chosen per map).
+- **6 neutral countries** (grey, 6–12 hexes each) fill the gaps, 2 between each pair of factions.
+- Every country has a capital (●, or ★ for faction capitals).
+- **Lakes** (light blue): 2–3 inland lakes per map, plus small enclosed pockets of water. **Mountains** (black): 3–5 clumps of 1–4 hexes, mostly inland. Both are impassable and can't be owned.
+- There's no other terrain: every land hex is the same.
 
-## 3. Units
-| Unit | Move | Strength | Hit points | Retreat move | Reach (area of control) | Cost |
-|---|---|---|---|---|---|---|
-| Infantry | 3 | 2 | 40 | 1 | Its own hex | 8💰 |
-| Armour | 5 | 4 | 48 | 2 | Its hex + the 6 around it | 14💰 2⚙ 2🛢 1🌿 |
+## 3. Setting up
+- Before turn 1, each faction places **10 armies** anywhere in its home country. Armies not placed go on the ★ capital.
+- Everyone places at the same time; turn 1 starts when all have submitted.
+- Everyone starts with $0. The first income arrives at the end of turn 1.
 
-- Each faction starts with **3 infantry and 1 armour** at and around its capital.
-- Any number of units can share a hex.
-- Hit points were raised 4× in v0.3.1 so battles last about 2–4 turns, long enough to send in reinforcements.
-- Unit costs are **(starting values)**.
+## 4. Armies and orders
+- There's **one kind of army**. All of a faction's armies in one hex form one army, shown on the map as a token with a number.
+- **No order limit:** every army can move every turn. You can split an army and send any number of it somewhere else; the rest stay. Your armies that end up in the same hex merge.
+- **Moving:** up to **3 hexes through land you own**. **Entering a hex you don't own (neutral or enemy), or a hex with enemy armies, ends the move.** So each army takes at most one new hex per turn, while moving behind your own lines is fast.
+- Armies with no orders stay put.
+- Submit whenever you're ready. You can **Edit my orders** until everyone else has submitted.
 
-## 4. Giving orders
-- You can give orders to **up to 3 units** per turn. Building units doesn't count toward this.
-- Plot a unit's path hex by hex. Moves for different units can be split up and mixed; they play out in the order you entered them.
-- Units without orders stay where they are.
-- Tap **Submit** when done. You can **Edit my orders** until everyone else has submitted.
+**On screen:** armies waiting for orders have a gold outline. Tap one (or use **Next ▶**), choose how many to send with − / + / All, then tap a highlighted hex. Planned moves show as arrows, with a dashed token where the armies will end up. Tap ✕ on an order to cancel it.
 
 ## 5. How a turn plays out
-1. Each step, every faction moves its next unit one hex, all at the same time. A faction with more steps keeps going after the others finish.
-2. **Hex control:** a hex with units of only one faction becomes theirs, including neutral hexes.
-3. **Contact stops movement:** a unit that comes into contact with an enemy stops, and so does the enemy it meets (see Combat).
-4. **End of turn**, in this order:
-   1. **Encirclement:** a group of hexes completely surrounded by one other faction switches to that faction. Exceptions: there are units inside; it touches ocean and has its own port; capitals and resource hexes never switch this way. This also applies to neutral land.
-   2. New units appear.
-   3. Income is collected.
+1. **Retreats** happen first.
+2. **Movement:** every moving army takes its first step at the same time, then its second, then its third.
+   - **Crossing paths:** if armies of different factions try to move into each other's hexes on the same step, they collide. Both stop where they were and fight a **border battle** between the two hexes. Armies that later move into either of those hexes join it.
+   - A hex with armies of only one faction becomes that faction's.
+3. **Battles** (section 6).
+4. **End of turn:** encirclement, then new armies appear, then income is paid.
 5. Everyone gets a turn summary and a step-by-step replay.
 
-## 6. Combat
-- **A battle starts** when enemies come into contact: one is inside the other's reach, they enter the same hex, or they try to swap hexes. Units that try to swap don't move and stay locked in battle.
-- **Each step**, every unit in battle hits the weakest enemy it's touching for its strength × a random factor between 0.5 and 1.5 (rounded, minimum 1). All hits land at the same time; units at 0 HP are destroyed.
-- **Terrain bonuses** use the hex the attacker is standing on (see the table in section 2).
-- While any battle is going, a turn lasts **at least 6 steps**. Battles carry over to the next turn, and other units can join them.
-- **Retreating:** a unit that starts the turn in battle can only retreat, with half its movement. Retreating units aren't stopped by contact and don't hit back, but can still be hit. Units in battle with no orders keep fighting.
-- Units don't heal.
+## 6. Battles
+Battles use Risk dice: each side rolls, the highest dice are compared, then the next highest. The loser of each pair loses 1 army. **Nobody rolls more dice than they have armies.**
 
-## 7. Economy
-**Four currencies:** 💰 Money, ⚙ Steel, 🛢 Oil, 🌿 Rubber. Unspent currency carries over. Starting stockpile **16💰 2⚙ 2🛢 1🌿 (starting value)**.
+- **Defended battles:** the faction that held the hex at the start of the turn, if it still has armies there, defends with **up to 2 dice and wins ties**. The attacker rolls **up to 3 dice**.
+- **Meeting battles** (no defender: neutral or empty land, or a border battle): both roll **up to 3 dice**, and **a tie costs both 1 army**.
+- **Three-way battles:** every pair of factions rolls against each other each round. The defender rolls up to 2 dice against each attacker; the two attackers roll up to 3 against the defender and against each other (a tie between them costs both). All losses in a round land at the same time.
+- **3 rounds per turn.** If both sides still have armies, the battle continues next turn.
+- **Armies in a battle at the start of a turn can:** hold (no order needed), be reinforced (other armies move in), or **retreat 1 hex** into a hex you own with no enemy armies.
 
-**What produces what, per turn (starting values):**
+## 7. Land and encirclement
+- A hex with only your armies in it becomes yours.
+- **Encirclement:** at the end of the turn, a group of hexes switches to an enemy if every **land** hex around it belongs to that one enemy. Ocean, lakes and mountains count as walls. It doesn't switch if any armies are inside, and capitals never switch this way. This applies to neutral land too.
 
-| Hex | Produces |
+## 8. Money and recruiting
+**Income per turn:**
+
+| You own | You get |
 |---|---|
-| 🏭 Factory | +2💰 |
-| 🛢 Oil field | +2🛢 |
-| ⛏ Mine | +2⚙ |
-| 🌿 Rubber plantation | +2🌿 |
-| Every country capital | +1💰 |
+| Each plain hex | $1 |
+| Each country capital (including a captured enemy ★ capital) | $2 |
+| Your own ★ faction capital | $5 |
 
-- Large countries have 2 factories and 2 resource hexes; small and neutral countries have 1 of each.
-- **Each faction's own land lacks one of the three resources.** The neutral countries next to it hold that resource, so you have to expand into them to keep building armour.
-- **Supply:** a country produces for you only if you hold its capital **and** that capital connects to your ★ capital, over hexes you own or by sea between any two of your ports. Cut off = no income from that country at all.
-
-## 8. Building units
-- Build at the capital of **any country you hold completely**, one unit per capital per turn, as long as no enemy unit is on it.
-- Cost is paid when the turn plays out, before that turn's income. If you can't afford it by then, the build is skipped.
-- New units appear on the capital at the end of the turn.
-- These rules are **(starting values)**.
+- There are no supply lines: every hex you own pays.
+- **Armies cost $10.** Recruit as many as you can afford, at **any capital you hold**, even if you don't hold the rest of that country. Spread them across capitals however you like.
+- New armies appear on their capital at the end of the turn, if you still hold it. They're paid for before that turn's income arrives.
 
 ## 9. Computer players
 - Pick **Opponents: 🤖 Computer** when creating a game, or use **☰ Menu → Computer plays open seats** in a friends game. A human can take a seat back with **Pick a seat → Take over**.
-- The bot holds its capital, pulls losing units out of battle, grabs land (preferring resource hexes and capitals), only picks fights it expects to win, and spends its stockpile every turn.
-- In computer-only test games, each faction ended up with 30–90 units, and some games ended early through elimination.
+- The bot keeps a guard on its capital, sends single armies to grab neutral land, gathers bigger groups to attack enemy armies it expects to beat, retreats from battles it's losing badly, and spends all its money each turn.
+- In computer-only test games, sieges of a well-defended capital take many turns, because a big stack still rolls only 3 dice. Eliminations happen in some games, usually after turn 25.
 
 ---
 
 ## 10. Ideas not built yet
-These are from my original design. They'll be reviewed when we simplify the rules; some may be dropped.
+From my original design. To be reviewed; some may be dropped.
 
-- **Naval units:** battleships (move hex by hex at sea, blockade ports by sitting next to them), submarines (attack sea supply routes), aircraft carriers (unlocked by research).
-- **Air power:** aircraft based at airfields, which can be built, captured and bombed. Fighters intercept bombers; strategic bombers hit enemy territory; close air support helps battles. Each air mission uses one of the turn's 3 orders.
-- **Guerrillas and secret police:** guerrillas go undercover in enemy land and sabotage units or factories, are hidden from normal recon and don't take hexes. Secret police (or detection tech) uncover them.
-- **Fog of war:** you only see enemy units next to your territory or within your units' recon range. *May need code on a server; I don't know yet if free Firebase allows it.*
-- **Technology:** WWII-era research paid with the four currencies, giving new units, unit upgrades, one-time benefits and more orders per turn. Research doesn't use orders.
+- **Supply lines:** income only from land connected to your capital. *(Removed for now; to revisit.)*
+- **Naval units:** battleships (blockade ports), submarines (attack sea routes), aircraft carriers.
+- **Air power:** airfields; fighters, bombers and close air support.
+- **Guerrillas and secret police.**
+- **Fog of war:** seeing only enemy armies near your land. *May need code on a server; I don't know yet if free Firebase allows it.*
+- **Technology:** research paid with money.
 - **"Your turn" notifications.**
 
 ## 11. Open decisions
-- Approve or change the economy and building numbers (sections 3, 7, 8).
-- Armies get very large (30–90 units) while only 3 can move per turn. Upkeep costs or a stacking limit might help.
-- Should units heal, and how?
-- Should neutral countries have defending units?
+- Whether 3 battle rounds per turn is the right number, once we've played.
+- Whether the starting numbers (10 armies, $10 per army, income rates) feel right.
