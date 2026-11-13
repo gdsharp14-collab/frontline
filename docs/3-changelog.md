@@ -34,9 +34,9 @@ Agreed changes go here until I say "build". Each one is cleared once it's built.
 - Every map gets **2–3 inland lakes** (4–7 hexes each, toward the middle of the map; at least one per map) and **2–3 impassable mountain ranges** (chains of 4–7 black hexes).
 - Lakes and mountains are placed first, and countries grow around them, so country sizes stay as before.
 - Neither can be entered, owned or counted for income or victory.
-- Mountains that end up with no land beside them become ocean, and lakes that end up touching the ocean become bays (ocean).
+- Mountains that end up with no land beside them become ocean, lakes that end up touching the ocean become bays (ocean), and small pockets of sea enclosed by land become small lakes.
 - **Equal starting land:** every faction starts with exactly the same number of hexes (one total per map, 34–40), though its three countries can be sized differently.
-- **Faction capitals at the back:** each ★ capital is placed on the hex of its home country farthest from the other factions' land (on average about 30% farther apart than before).
+- **Small countries as a buffer:** each faction's home country sits at the back of the map, with its two small countries in front of it, toward the middle and the enemies. A home country never borders an enemy faction's country. Capitals stay where they are now (roughly central in their country).
 
 **Ports removed; encirclement simplified**
 - Ports are removed: they no longer do anything now that supply lines are gone.
