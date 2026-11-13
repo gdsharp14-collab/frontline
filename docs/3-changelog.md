@@ -30,6 +30,12 @@ Agreed changes go here until I say "build". Each one is cleared once it's built.
 - **No supply lines for now:** every hex you own pays, whether or not it connects to your capital. *(To revisit later.)*
 - **Armies cost $10.** On your turn, recruit as many as you can afford, at any capital hex you own, even if you don't hold the rest of that country. Spread them across as many capitals as you like. New armies appear on their capital at the end of the turn.
 
+**Map variety**
+- Every map gets **2–3 inland lakes** (4–7 hexes each, toward the middle of the map; at least one per map) and **2–3 impassable mountain ranges** (chains of 4–7 black hexes).
+- Lakes and mountains are placed first, and countries grow around them, so country sizes stay as before.
+- Neither can be entered, owned or counted for income or victory.
+- Mountains that end up with no land beside them become ocean, and lakes that end up touching the ocean become bays (ocean).
+
 **Start of the game**
 - Each faction starts with **10 armies**, placed wherever it likes within its home country (the country with its ★ faction capital).
 
