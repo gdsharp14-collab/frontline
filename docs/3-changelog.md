@@ -43,6 +43,14 @@ Agreed changes go here until I say "build". Each one is cleared once it's built.
 - Ports are removed: they no longer do anything now that supply lines are gone.
 - A group of hexes switches to an enemy at the end of the turn if every **land** hex around it belongs to that one enemy. Ocean, lakes and mountains count as walls. It still doesn't switch if there are armies inside, and capitals never switch this way.
 
+**Giving orders (screen)**
+- **Army counters:** each army shows on the map as a token with its number of armies on it.
+- **Waiting armies glow:** armies with no orders yet have a gold outline. Once a move is plotted the outline goes away and an arrow shows the path. Armies in battle show ⚔.
+- **Reach:** tapping an army highlights every hex it can still reach: full 3-hex reach through your own land, with hexes you don't own shown as end points.
+- **Next ▶ button:** the panel shows how many armies are waiting for orders (e.g. "4 armies waiting for orders") and Next ▶ jumps to the next one.
+- **Splitting:** tapping an army with more than one in it asks how many to send (− / + buttons, plus "send all"). The rest stay behind and still count as waiting.
+- **Submitting:** you can submit any time; armies without orders stay put. If some have no orders, the button says e.g. "Submit (3 armies not moving)".
+
 **Start of the game**
 - Each faction starts with **10 armies**, placed wherever it likes within its home country (the country with its ★ faction capital).
 
