@@ -19,10 +19,14 @@ Agreed changes go here until I say "build". Each one is cleared once it's built.
 - **Dice:** compare the highest dice, then the next highest. The loser of each pair loses 1 army. Nobody rolls more dice than they have armies.
 - **Defended battles:** the faction that held the hex at the start of the turn, if it still has armies there, is the defender. The defender rolls up to 2 dice and the attacker up to 3. **The defender wins ties.**
 - **Meeting battles** (no defender, e.g. two factions entering an empty or neutral hex): both roll up to 3 dice. **In a tie, both lose 1 army.**
-- **Armies that cross paths** (each moving into the hex the other is leaving, on the same step): they collide, both stop in the hex they started that step from, and fight a meeting battle on the border between them (3 dice each, a tie costs both 1 army).
+- **Armies that cross paths** (each moving into the hex the other is leaving, on the same step): they collide, both stop in the hex they started that step from, and fight a meeting battle on the border between them (3 dice each, a tie costs both 1 army). Armies that later move into either of those two hexes join that battle.
 - **3 rounds per turn.** If both sides still have armies, the battle carries over to the next turn.
 - **Next turn, armies in battle can:** hold (no order, keep fighting), get reinforced (more armies move in), or retreat 1 hex. Retreats happen before that turn's battle rounds.
 - **Three-way battles:** every pair of factions rolls against each other each round. The defender rolls up to 2 dice against each attacker; the attackers roll up to 3 dice against the defender and up to 3 against each other (between the two attackers, a tie costs both 1 army). All losses in a round land at the same time.
+
+**Economy: money only**
+- Steel, Oil and Rubber are removed, along with factories, oil fields, mines and rubber plantations. The only currency is 💰 Money.
+- **Income per turn:** $1 for each hex you own that isn't a capital, $2 for each other country capital you own, and $5 for your ★ faction capital.
 
 ## Versions
 Newest first. "GitHub" is the saved version on GitHub; the live game always shows the newest one there.
