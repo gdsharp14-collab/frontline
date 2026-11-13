@@ -27,6 +27,11 @@ Agreed changes go here until I say "build". Each one is cleared once it's built.
 **Economy: money only**
 - Steel, Oil and Rubber are removed, along with factories, oil fields, mines and rubber plantations. The only currency is 💰 Money.
 - **Income per turn:** $1 for each hex you own that isn't a capital, $2 for each other country capital you own, and $5 for your ★ faction capital.
+- **No supply lines for now:** every hex you own pays, whether or not it connects to your capital. *(To revisit later.)*
+- **Armies cost $10.** On your turn, recruit as many as you can afford, at any capital hex you own, even if you don't hold the rest of that country. Spread them across as many capitals as you like. New armies appear on their capital at the end of the turn.
+
+**Start of the game**
+- Each faction starts with **10 armies**, placed wherever it likes within its home country (the country with its ★ faction capital).
 
 ## Versions
 Newest first. "GitHub" is the saved version on GitHub; the live game always shows the newest one there.
