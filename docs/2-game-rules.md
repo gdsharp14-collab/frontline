@@ -1,6 +1,6 @@
 # Warsea Conquest — Game Rules
 
-*Last updated: November 12, 2026 · Matches game version **v0.4.0***
+*Last updated: November 14, 2026 · Matches game version **v0.4.0** (confirmed playable Nov 14)*
 
 This file describes the game as it's actually built, plus ideas that aren't built yet (section 10).
 
@@ -92,5 +92,4 @@ From my original design. To be reviewed; some may be dropped.
 - **"Your turn" notifications.**
 
 ## 11. Open decisions
-- Whether 3 battle rounds per turn is the right number, once we've played.
-- Whether the starting numbers (10 armies, $10 per army, income rates) feel right.
+See "Open questions for future stages" in the project outline, which also explains why each current rule was chosen.

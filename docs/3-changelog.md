@@ -1,6 +1,6 @@
 # Warsea Conquest — Changelog
 
-*Last updated: November 12, 2026 (v0.4.0 released)*
+*Last updated: November 14, 2026*
 
 ## Waiting for next build
 Agreed changes go here until I say "build". Each one is cleared once it's built.
@@ -12,7 +12,7 @@ Newest first. "GitHub" is the saved version on GitHub; the live game always show
 
 | Version | Date | What changed | GitHub |
 |---|---|---|---|
-| **v0.4.0** | Nov 12, 2026 | **Simplified, Risk-style rules.** One army type with Risk dice battles (3 rounds per turn; defended, meeting, border and three-way battles; retreats). No terrain. Money only ($1 per hex, $2 per capital, $5 own capital; armies $10, recruited at any capital). No supply lines, no ports, no order limit (every army can move; up to 3 hexes through own land, entering new land ends the move). 10 starting armies placed in the home country. New maps: inland lakes, mountain clumps, equal starting land, small countries as a buffer. New order screen (army counters, gold outlines, Next ▶, splitting). See details below | `5a73f91` ← **live now** |
+| **v0.4.0** ✓ | Nov 12, 2026 | **Milestone: first confirmed playable version** (played Nov 14). **Simplified, Risk-style rules.** One army type with Risk dice battles (3 rounds per turn; defended, meeting, border and three-way battles; retreats). No terrain. Money only ($1 per hex, $2 per capital, $5 own capital; armies $10, recruited at any capital). No supply lines, no ports, no order limit (every army can move; up to 3 hexes through own land, entering new land ends the move). 10 starting armies placed in the home country. New maps: inland lakes, mountain clumps, equal starting land, small countries as a buffer. New order screen (army counters, gold outlines, Next ▶, splitting). See details below | `5a73f91` ← **live now** |
 | v0.3.1 | Nov 1, 2026 | Hit points ×4 so battles last longer | Never released; replaced by v0.4.0 |
 | v0.3.0 | Nov 1, 2026 | **Stage 3, economy:** four currencies, factories and resource hexes, supply paths over land and between ports, building units, computer players that build | `031a6b9` |
 | v0.2.0 | Nov 1, 2026 | **Stage 2, combat:** contact, battles across steps, strength and hit points, terrain bonuses, retreat, head-on collisions, HP bars, battle replays | `d08e2a7` |
@@ -33,8 +33,9 @@ Newest first. "GitHub" is the saved version on GitHub; the live game always show
 - Old saved games (v0.3.x) can't be opened; start a new game.
 - The computer player was rewritten for the new rules.
 
-**Testing:** 17 rule checks with rigged dice (ties, meeting and border battles, three-way battles, movement limits, splitting, retreats, income, recruiting, encirclement, elimination, placement); 40+ computer-only games to the end; a game against the computer and an 8-turn friends game on three simulated phones (all three phones ended with the same game). Not yet tested on real phones with real Firebase.
+**Testing:** 17 rule checks with rigged dice (ties, meeting and border battles, three-way battles, movement limits, splitting, retreats, income, recruiting, encirclement, elimination, placement); 40+ computer-only games to the end; a game against the computer and an 8-turn friends game on three simulated phones (all three phones ended with the same game). **Nov 14: played by me on the live site; it plays well and follows all the agreed rules.**
 
 ## Docs history
+- **Nov 14, 2026:** v0.4.0 recorded as the first milestone. Added "Progress so far", "Key decisions so far, and why" and "Open questions for future stages" to the project outline.
 - **Nov 12, 2026:** reorganized into 3 docs (project outline, game rules, changelog). They replace `warsea-conquest-context.md` and both copies of `warsea-conquest-design-draft.md` (v1–v6.1). The older copies' differing hit-point numbers were resolved to what the game actually uses.
 - **Nov 1, 2026:** design drafts v1–v6.1. v1 collected my ideas; v2–v3 added my answers to Claude's questions; v4–v6.1 recorded each stage as it was built.
