@@ -1,11 +1,25 @@
 # Warsea Conquest — Changelog
 
-*Last updated: November 14, 2026*
+*Last updated: November 16, 2026*
 
 ## Waiting for next build
 Agreed changes go here until I say "build". Each one is cleared once it's built.
 
-- *Nothing agreed yet.*
+### Map-making (agreed Nov 16, 2026), planned as v0.5.0
+**Sea lanes**
+- Maps can be split into separate continents or islands, linked by **sea lanes**: specific chains of ocean hexes. The rest of the ocean stays impassable.
+- **Moving:** sea-lane hexes don't stop movement. Armies cross them freely within the usual 3 hexes and stop only if they meet enemy armies. Landing on land you don't own still ends the move.
+- **Never owned:** sea-lane hexes stay neutral and never count for income or victory.
+- *Claude's suggestions, not objected to:* battles in a sea-lane hex are meeting battles (3 dice each, a tie costs both); armies may stay in a sea-lane hex to block it; sea lanes count as walls for encirclement. On the map, sea lanes are lighter blue with a dotted route.
+
+**Layout styles**
+- New layout styles in the generator, e.g. one landmass broken up by seas, three continents, and an archipelago. The map may need to be a bit larger.
+
+**Balanced named maps**
+- Pick **5 (or 6) named maps** that are fairly balanced between the three positions, chosen with a simulation tool: generate a few hundred candidate maps, play each many times with computer players, keep the ones where each position wins close to a third of the time, and I pick my favourites.
+- **2 of the 5 can be three-way symmetrical**, if testing shows they're balanced enough.
+- **Random maps stay** as an option alongside the named maps.
+- **Order of work:** (1) sea lanes and layout styles, with sample maps to review; (2) a modest computer-player upgrade (using sea lanes, holding chokepoints, gathering bigger attacks), tested by playing the new bot against the old one; (3) the simulation tool and map selection.
 
 ## Versions
 Newest first. "GitHub" is the saved version on GitHub; the live game always shows the newest one there.
