@@ -1,0 +1,27 @@
+const L=require('../engine-dev.js'),fs=require('fs');
+const seed=+process.argv[2],style=process.argv[3],out=process.argv[4];
+const MODE=process.argv[5];if(MODE&&MODE!=='-')L.STYLES[style].long=MODE;const M=L.genWorldAny(seed,style);if(!M){console.log('none');process.exit(1)}
+const S=10,H=[4,214,140],NAMES=['Red','Blue','Green'];
+const corner=(c,k)=>{const a=Math.PI/180*(60*k-30);return[(c.x+S*Math.cos(a)).toFixed(2),(c.y+S*Math.sin(a)).toFixed(2)]};
+const pts=c=>[0,1,2,3,4,5].map(k=>corner(c,k).join(',')).join(' ');
+const seg=(c,k)=>`M${corner(c,k)}L${corner(c,(k+1)%6)}`;
+const facC=[0,1,2].map(f=>M.countries.map((k,i)=>k.f===f?i:-1).filter(i=>i>=0));
+const fill=ci=>{const k=M.countries[ci];if(k.f<0){const n=M.countries.filter((x,j)=>x.f<0&&j<ci).length;return`hsl(40 6% ${44+(n%3)*5}%)`}const ix=facC[k.f].indexOf(ci);return`hsl(${H[k.f]} ${ix===0?55:42}% ${ix===0?42:ix===1?52:58}%)`};
+let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;M.cells.forEach(c=>{if(!c.l&&!c.ft)return;x0=Math.min(x0,c.x);y0=Math.min(y0,c.y);x1=Math.max(x1,c.x);y1=Math.max(y1,c.y)});
+const vx=x0-14,vy=y0-14,vw=x1-x0+28,vh=y1-y0+28,legH=40;
+let o=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vx} ${vy} ${vw} ${vh+legH}" width="${Math.round(vw*3.6)}" height="${Math.round((vh+legH)*3.6)}" font-family="DejaVu Sans, sans-serif"><rect x="${vx}" y="${vy}" width="${vw}" height="${vh+legH}" fill="#10283d"/>`;
+M.cells.forEach((c,i)=>{const t=c.l?'land':c.ft||'sea';o+=`<polygon points="${pts(c)}" fill="${t==='land'?fill(c.c):t==='mtn'?'#0b0b0b':t==='lake'?'#1f5f8f':t==='lane'?'#3b82b8':'#163652'}" stroke="${t==='land'?'rgba(0,0,0,.25)':t==='lane'?'rgba(255,255,255,.35)':'rgba(255,255,255,.04)'}" stroke-width="0.4"/>`;
+  if(t==='mtn')o+=`<path d="M${c.x-4.4},${c.y+2.4}L${c.x-1.6},${c.y-2.6}L${c.x+1},${c.y+2.4}M${c.x-0.4},${c.y+2.4}L${c.x+2.1},${c.y-1.2}L${c.x+4.6},${c.y+2.4}" fill="none" stroke="#5a5a5a" stroke-width=".7"/>`});
+let b='',co='';M.cells.forEach((c,i)=>{if(!c.l)return;for(let k=0;k<6;k++){const j=c.nb[k];if(j<0||!M.cells[j].l){if(j<0||M.cells[j].ft!=='mtn')co+=seg(c,k)}else if(M.cells[j].c!==c.c&&i<j)b+=seg(c,k)}});
+o+=`<path d="${b}" fill="none" stroke="#05080b" stroke-width="1.5" stroke-linecap="round"/><path d="${co}" fill="none" stroke="#cfe6f7" stroke-opacity=".6" stroke-width=".9"/>`;
+M.lanes.forEach(p=>{o+=`<polyline points="${p.map(i=>M.cells[i].x+','+M.cells[i].y).join(' ')}" fill="none" stroke="#fff" stroke-width="1.1" stroke-dasharray="1.6 1.6" stroke-linecap="round" opacity=".85"/>`});
+const star=(cx,cy,ro,ri)=>{let d='';for(let k=0;k<10;k++){const r=k%2?ri:ro,a=-Math.PI/2+k*Math.PI/5;d+=(k?'L':'M')+(cx+r*Math.cos(a)).toFixed(2)+','+(cy+r*Math.sin(a)).toFixed(2)}return d+'Z'};
+M.countries.forEach((k,ci)=>{const c=M.cells[k.cap],fc=M.factions.some(f=>f.cap===k.cap);
+  o+=fc?`<path d="${star(c.x,c.y-1,5,2.1)}" fill="#f2c14e" stroke="#3a2c00" stroke-width=".5"/>`:`<circle cx="${c.x}" cy="${c.y-1}" r="2.3" fill="#fff" stroke="#111" stroke-width=".6"/>`;
+  o+=`<text x="${k.lx}" y="${k.ly+1.2}" font-size="3.4" font-weight="600" text-anchor="middle" fill="rgba(255,255,255,.92)" stroke="rgba(0,0,0,.65)" stroke-width=".8" paint-order="stroke">${k.name}</text>`});
+const own=M.cells.map(c=>c.l?M.countries[c.c].f:-9),cnt=t=>M.cells.filter(c=>c.ft===t).length;
+const per=[0,1,2].map(f=>own.filter(o=>o===f).length);
+let y=vy+vh+12;
+o+=`<text x="${vx+6}" y="${y}" font-size="6" font-weight="700" fill="#f2c14e">${L.STYLES[style].name}${process.argv[5]&&process.argv[5]!=="-"?" — "+(process.argv[5]==="direct"?"Method B: long direct lanes":"Method A: islands halfway"):""}</text>`;
+o+=`<text x="${vx+6}" y="${y+9}" font-size="4.2" fill="#e9eef3">${M.cells.filter(c=>c.l).length} land hexes · ${per[0]} per faction · ${M.lanes.length} sea lanes (${cnt('lane')} hexes) · ${cnt('lake')} lake · ${cnt('mtn')} mountain</text></svg>`;
+fs.writeFileSync(out+'.svg',o);console.log(style,seed,'lanes',M.lanes.length,'per',per.join('/'));
