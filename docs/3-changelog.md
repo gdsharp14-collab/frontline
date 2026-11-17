@@ -35,7 +35,11 @@ Work in progress is saved on the GitHub branch **`v0.5-dev`** (folder `dev/`), s
   - **Against two copies of the old player:** v2 won **59%** of 150 games across five map styles (33% would mean no better), and lost its capital in only 2 of them.
   - **Three v2 players against each other:** games are decisive, with about one elimination per game and the winner holding 75–93% of the land at the end.
 - **Claude's decision while building the sea-lane rules:** armies in a battle may also **retreat into an empty sea-lane hex** next to them, not only into their own land.
-- **Next: step 3**, the simulation tool and picking the named maps.
+- **Step 3 (Nov 16): map simulations.** Added two more map types: **three-way symmetrical** (Symmetric, Symmetric Isles) and **Mixed** (some factions on one continent, others spread over islands). Played **200 computer-v2 games on each of 179 candidate maps** (about 36,000 games).
+  - **Fixing the measurement:** a first run showed even symmetrical maps (three identical positions) coming out as unfair as 9% / 86% / 6%. The cause was the computer player always breaking ties the same way, which favours one seat on a given map. Claude made it vary its choices from game to game; after that, symmetrical maps came out at **34% / 33% / 33%** overall, with typical gaps of 4–6% per map (normal luck for 200 games). All results below use the corrected method.
+  - **Finding: random maps are usually unfair.** On a typical random map, one position wins about two thirds of the games (median gap from a third: about 33%). Only a few random maps per style came out within 8%. Symmetrical maps were fair almost every time (24 of 28).
+  - **Shortlist:** the 11 most balanced maps, with pictures, are saved on the `v0.5-dev` branch in `dev/sim/shortlist/`. Caveat: balance is measured with computer players; people may find advantages they don't.
+- **Next:** I pick 5 named maps from the shortlist (up to 2 symmetrical). Then build v0.5.0.
 
 ## Versions
 Newest first. "GitHub" is the saved version on GitHub; the live game always shows the newest one there.
