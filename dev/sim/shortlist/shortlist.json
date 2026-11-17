@@ -1,0 +1,310 @@
+[
+ {
+  "n": 1,
+  "cfg": "Symmetric Isles",
+  "st": "symisles",
+  "mode": null,
+  "seed": 19407,
+  "wins": [
+   33,
+   34,
+   34
+  ],
+  "gap": 1,
+  "land25": [
+   33,
+   34,
+   33
+  ],
+  "elims": 0.39,
+  "len": 49.5,
+  "land": 162,
+  "lanes": 6
+ },
+ {
+  "n": 2,
+  "cfg": "Symmetric Isles",
+  "st": "symisles",
+  "mode": null,
+  "seed": 19111,
+  "wins": [
+   34,
+   33,
+   34
+  ],
+  "gap": 1,
+  "land25": [
+   32,
+   33,
+   34
+  ],
+  "elims": 0.97,
+  "len": 47.8,
+  "land": 180,
+  "lanes": 6
+ },
+ {
+  "n": 3,
+  "cfg": "Symmetric",
+  "st": "sym",
+  "mode": null,
+  "seed": 18296,
+  "wins": [
+   32,
+   33,
+   35
+  ],
+  "gap": 2,
+  "land25": [
+   34,
+   33,
+   33
+  ],
+  "elims": 0.92,
+  "len": 48.5,
+  "land": 186,
+  "lanes": 3
+ },
+ {
+  "n": 4,
+  "cfg": "Symmetric",
+  "st": "sym",
+  "mode": null,
+  "seed": 18444,
+  "wins": [
+   35,
+   35,
+   30
+  ],
+  "gap": 3,
+  "land25": [
+   33,
+   33,
+   33
+  ],
+  "elims": 0.04,
+  "len": 50,
+  "land": 171,
+  "lanes": 3
+ },
+ {
+  "n": 5,
+  "cfg": "Archipelago",
+  "st": "archipelago",
+  "mode": null,
+  "seed": 11111,
+  "wins": [
+   35,
+   29,
+   36
+  ],
+  "gap": 4,
+  "land25": [
+   36,
+   31,
+   33
+  ],
+  "elims": 1.19,
+  "len": 47,
+  "land": 159,
+  "lanes": 16
+ },
+ {
+  "n": 6,
+  "cfg": "Classic",
+  "st": "classic",
+  "mode": null,
+  "seed": 7296,
+  "wins": [
+   35,
+   29,
+   37
+  ],
+  "gap": 4,
+  "land25": [
+   36,
+   29,
+   35
+  ],
+  "elims": 0.66,
+  "len": 48.8,
+  "land": 169,
+  "lanes": 0
+ },
+ {
+  "n": 7,
+  "cfg": "Mixed",
+  "st": "mixed",
+  "mode": null,
+  "seed": 14185,
+  "wins": [
+   34,
+   39,
+   27
+  ],
+  "gap": 6,
+  "land25": [
+   34,
+   35,
+   31
+  ],
+  "elims": 1.08,
+  "len": 47.1,
+  "land": 173,
+  "lanes": 13
+ },
+ {
+  "n": 8,
+  "cfg": "Continents + long lanes",
+  "st": "continents",
+  "mode": "direct",
+  "seed": 9481,
+  "wins": [
+   40,
+   28,
+   32
+  ],
+  "gap": 7,
+  "land25": [
+   36,
+   33,
+   31
+  ],
+  "elims": 0.55,
+  "len": 49,
+  "land": 170,
+  "lanes": 10
+ },
+ {
+  "n": 9,
+  "cfg": "Mixed + islands halfway",
+  "st": "mixed",
+  "mode": "island",
+  "seed": 15148,
+  "wins": [
+   34,
+   28,
+   39
+  ],
+  "gap": 5,
+  "land25": [
+   35,
+   28,
+   37
+  ],
+  "elims": 0.81,
+  "len": 47.8,
+  "land": 186,
+  "lanes": 19
+ },
+ {
+  "n": 10,
+  "cfg": "Continents + islands halfway",
+  "st": "continents",
+  "mode": "island",
+  "seed": 10444,
+  "wins": [
+   40,
+   30,
+   30
+  ],
+  "gap": 6,
+  "land25": [
+   36,
+   27,
+   37
+  ],
+  "elims": 0.5,
+  "len": 49.5,
+  "land": 186,
+  "lanes": 12
+ },
+ {
+  "n": 11,
+  "cfg": "Archipelago",
+  "st": "archipelago",
+  "mode": null,
+  "seed": 11481,
+  "wins": [
+   40,
+   35,
+   26
+  ],
+  "gap": 8,
+  "land25": [
+   36,
+   39,
+   26
+  ],
+  "elims": 1.26,
+  "len": 45.6,
+  "land": 155,
+  "lanes": 15
+ },
+ {
+  "n": 12,
+  "cfg": "Inland Sea",
+  "st": "inlandsea",
+  "mode": null,
+  "seed": 16148,
+  "wins": [
+   21,
+   43,
+   36
+  ],
+  "gap": 12,
+  "land25": [
+   26,
+   38,
+   36
+  ],
+  "elims": 1.09,
+  "len": 46.7,
+  "land": 175,
+  "lanes": 6
+ },
+ {
+  "n": 13,
+  "cfg": "Classic",
+  "st": "classic",
+  "mode": null,
+  "seed": 7111,
+  "wins": [
+   48,
+   30,
+   22
+  ],
+  "gap": 15,
+  "land25": [
+   44,
+   32,
+   24
+  ],
+  "elims": 0.79,
+  "len": 47.5,
+  "land": 164,
+  "lanes": 1
+ },
+ {
+  "n": 14,
+  "cfg": "Inland Sea + islands halfway",
+  "st": "inlandsea",
+  "mode": "island",
+  "seed": 17074,
+  "wins": [
+   35,
+   17,
+   49
+  ],
+  "gap": 16,
+  "land25": [
+   35,
+   22,
+   43
+  ],
+  "elims": 1.15,
+  "len": 47.4,
+  "land": 185,
+  "lanes": 12
+ }
+]

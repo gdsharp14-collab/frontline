@@ -1,6 +1,6 @@
 const L=require('../engine-dev.js'),fs=require('fs');
 const seed=+process.argv[2],style=process.argv[3],out=process.argv[4];
-const MODE=process.argv[5];if(MODE&&MODE!=='-')L.STYLES[style].long=MODE;const M=L.genWorldAny(seed,style);if(!M){console.log('none');process.exit(1)}
+const MODE=process.argv[5];if(MODE&&MODE!=='-'&&L.STYLES[style])L.STYLES[style].long=MODE;const M=L.genWorldAny(seed,style);if(!M){console.log('none');process.exit(1)}
 const S=10,H=[4,214,140],NAMES=['Red','Blue','Green'];
 const corner=(c,k)=>{const a=Math.PI/180*(60*k-30);return[(c.x+S*Math.cos(a)).toFixed(2),(c.y+S*Math.sin(a)).toFixed(2)]};
 const pts=c=>[0,1,2,3,4,5].map(k=>corner(c,k).join(',')).join(' ');
@@ -22,6 +22,7 @@ M.countries.forEach((k,ci)=>{const c=M.cells[k.cap],fc=M.factions.some(f=>f.cap=
 const own=M.cells.map(c=>c.l?M.countries[c.c].f:-9),cnt=t=>M.cells.filter(c=>c.ft===t).length;
 const per=[0,1,2].map(f=>own.filter(o=>o===f).length);
 let y=vy+vh+12;
-o+=`<text x="${vx+6}" y="${y}" font-size="6" font-weight="700" fill="#f2c14e">${L.STYLES[style].name}${process.argv[5]&&process.argv[5]!=="-"?" — "+(process.argv[5]==="direct"?"Method B: long direct lanes":"Method A: islands halfway"):""}</text>`;
-o+=`<text x="${vx+6}" y="${y+9}" font-size="4.2" fill="#e9eef3">${M.cells.filter(c=>c.l).length} land hexes · ${per[0]} per faction · ${M.lanes.length} sea lanes (${cnt('lane')} hexes) · ${cnt('lake')} lake · ${cnt('mtn')} mountain</text></svg>`;
+const ST=process.argv[6]||'';o+=`<text x="${vx+6}" y="${y}" font-size="6.4" font-weight="700" fill="#f2c14e">${ST.split('|')[0]}</text>`;
+o+=`<text x="${vx+6}" y="${y+9}" font-size="5" fill="#e9eef3">${ST.split('|')[1]||''}</text>`;
+o+=`<text x="${vx+6}" y="${y+17}" font-size="4.2" fill="#8fa0b2">${M.cells.filter(c=>c.l).length} land hexes · ${per[0]} per faction · ${M.lanes.length} sea lanes</text></svg>`;
 fs.writeFileSync(out+'.svg',o);console.log(style,seed,'lanes',M.lanes.length,'per',per.join('/'));

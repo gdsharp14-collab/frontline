@@ -32,7 +32,7 @@ const passable=(M,i)=>isLand(M,i)||isLane(M,i); // sea lanes can be crossed but 
 // out afterwards. Every faction starts with exactly the same number of hexes, in one connected territory.
 function genWorld(seed,style){
   style=style||'classic';
-  for(let a=0;a<160;a++){const w=tryWorld(seed,a,style);if(w){w.seed=seed;w.style=style;return w}}
+  for(let a=0;a<160;a++){const w=(typeof SYMSTYLES!=='undefined'&&SYMSTYLES[style])?tryWorldSym(seed,a,style):tryWorld(seed,a,style);if(w){w.seed=seed;w.style=style;return w}}
   return null;
 }
 function genWorldAny(seed,style){
@@ -42,8 +42,9 @@ function genWorldAny(seed,style){
 // layout styles: grid size, how land is split into separate landmasses, gap between them, and sea features
 const STYLES={
   classic:    {name:'Classic',     grid:{cols:21,rows:23},cont:null,     G:0,lakes:[2,3],bigSea:0,Rh:6.0,Rs:3.5,maxLane:3},
-  inlandsea:  {name:'Inland Sea',  grid:{cols:23,rows:25},cont:null,     G:0,lakes:[0,1],bigSea:1,Rh:6.8,Rs:4.6,maxLane:4},
+  inlandsea:  {name:'Inland Sea',  grid:{cols:27,rows:29},cont:null,     G:0,lakes:[0,1],bigSea:1,Rh:6.8,Rs:4.6,maxLane:4},
   continents: {name:'Continents',  grid:{cols:27,rows:29},cont:'faction',G:1,lakes:[0,1],bigSea:0,Rh:7.6,Rs:5.0,maxLane:3,extra:0.5,neutral:'center',varied:[2,3],long:'direct',longN:[1,2]},
+  mixed:      {name:'Mixed',       grid:{cols:27,rows:29},cont:'mixed',  G:1,lakes:[0,1],bigSea:0,Rh:7.6,Rs:4.8,maxLane:3,extra:0.35,varied:[1,3],long:null,longN:[3,3]},
   archipelago:{name:'Archipelago', grid:{cols:27,rows:29},cont:'country',G:1,lakes:[0,0],bigSea:0,Rh:7.6,Rs:4.8,maxLane:3,extra:0.25,varied:[1,2],long:'direct',longN:[1,2]}
 };
 function tryWorld(seed,attempt,style){
@@ -65,7 +66,8 @@ function tryWorld(seed,attempt,style){
   const ring=i=>{const out=[],seen=new Set([i]);let fr=[i];for(let d=0;d<ST.G;d++){const nx=[];for(const x of fr)for(const y of NB(x))if(!seen.has(y)){seen.add(y);out.push(y);nx.push(y)}fr=nx}return out};
   const RING=ST.G?cells.map((c,i)=>ring(i)):null;
   const C=[];
-  const contOf=id=>{const k=C[id];if(ST.cont==='country')return id;if(ST.cont==='faction')return k.f>=0?k.f:3;return 0};
+  const MODES=ST.cont==='mixed'?(rnd()<0.5?['cont','cont','isl']:['cont','isl','isl']).sort(()=>rnd()-0.5):null;
+  const contOf=id=>{const k=C[id];if(ST.cont==='country')return id;if(ST.cont==='faction')return k.f>=0?k.f:3;if(MODES)return k.f>=0?(MODES[k.f]==='isl'?id:k.f):100+k.pair;return 0};
   const gapOK=(j,id)=>{if(!ST.G)return true;const cj=contOf(id);for(const k of RING[j]){const o=cells[k].c;if(o>=0&&contOf(o)!==cj)return false}return true};
   // pre-placed water: a big central sea (Inland Sea) and inland lakes; countries grow around them
   {const inner=i=>!edge(cells[i])&&hd(i,center)>=2&&hd(i,center)<=(ST.bigSea?8:7)&&cells[i].c===-1;
@@ -77,22 +79,22 @@ function tryWorld(seed,attempt,style){
      const blob=[o[ri(o.length)]];put(blob[0]);const tg=4+ri(4);
      while(blob.length<tg){const fr=[...new Set(blob.flatMap(NB))].filter(j=>inner(j)&&(ST.bigSea?hd(j,center)>=5:hd(j,center)<=5));if(!fr.length)break;const j=fr[ri(fr.length)];put(j);blob.push(j)}}
   }
-  const addCountry=(f,L,seedCell,target)=>{const id=C.length;C.push({f,L,target,cells:[seedCell]});cells[seedCell].c=id;return id};
+  const addCountry=(f,L,seedCell,target,pair)=>{const id=C.length;C.push({f,L,target,cells:[seedCell],pair});cells[seedCell].c=id;return id};
   // home countries (ids 0-2) at the back; small countries (ids 3-8) in front of them
   const a0=rnd()*Math.PI*2, Rh=(ST.Rh+rnd()*0.5)*S*SQ3, Rs=(ST.Rs+rnd()*0.4)*S*SQ3, cx=cells[center].x, cy=cells[center].y;
   const at=(r,a)=>nearest(cx+r*Math.cos(a),cy+r*Math.sin(a));
   const TOT=34+ri(7), split=[];
   for(let f=0;f<NF;f++){const lo=Math.max(15,TOT-24),hi=Math.min(20,TOT-16),h=lo+ri(hi-lo+1),r=TOT-h,s1lo=Math.max(8,r-12),s1hi=Math.min(12,r-8),s1=s1lo+ri(s1hi-s1lo+1);split.push([h,s1,r-s1])}
   for(let f=0;f<NF;f++){const s=at(Rh,a0+f*2*Math.PI/3);if(s<0)return null;addCountry(f,1,s,split[f][0])}
-  for(let f=0;f<NF;f++)for(let k=0;k<2;k++){const s=at(Rs,a0+f*2*Math.PI/3+(k?1:-1)*(ST.cont==='country'?0.5:0.42));if(s<0)return null;addCountry(f,0,s,split[f][1+k])}
+  for(let f=0;f<NF;f++)for(let k=0;k<2;k++){const s=at(Rs,a0+f*2*Math.PI/3+(k?1:-1)*(ST.cont==='country'||(MODES&&MODES[f]==='isl')?0.5:0.42));if(s<0)return null;addCountry(f,0,s,split[f][1+k])}
   // neutral countries: in the gaps between each pair of factions (or, for Continents, one central continent)
   const neutralIds=[];
   for(let a=0;a<NF;a++){
     if(ST.neutral==='center'){const ang=a0+(a+0.5)*2*Math.PI/3;for(const r of [1.3,3.0]){const seed=at((r+rnd()*0.3)*S*SQ3,ang);if(seed<0)return null;neutralIds.push(addCountry(-1,0,seed,8+ri(5)))}continue}
     const b=(a+1)%NF,A=cells[C[a].cells[0]],Bc=cells[C[b].cells[0]];
     const mx=(A.x+Bc.x)/2,my=(A.y+Bc.y)/2,dx=Bc.x-A.x,dy=Bc.y-A.y,L=Math.hypot(dx,dy)||1,px=-dy/L,py=dx/L;
-    for(let k=0;k<NEUTRALS_PER_PAIR;k++){const off=(k-(NEUTRALS_PER_PAIR-1)/2)*(ST.cont==='country'?3.4:2.6)*S*SQ3+(rnd()-0.5)*S;
-      const seed=nearest(mx+px*off,my+py*off);if(seed<0)return null;neutralIds.push(addCountry(-1,0,seed,8+ri(5)))}}
+    for(let k=0;k<NEUTRALS_PER_PAIR;k++){const off=(k-(NEUTRALS_PER_PAIR-1)/2)*(ST.cont==='country'||MODES?3.4:2.6)*S*SQ3+(rnd()-0.5)*S;
+      const seed=nearest(mx+px*off,my+py*off);if(seed<0)return null;neutralIds.push(addCountry(-1,0,seed,8+ri(5),a))}}
   // starting points of different landmasses must keep the sea gap
   if(ST.G){for(let i=0;i<C.length;i++)for(let j=i+1;j<C.length;j++)if(contOf(i)!==contOf(j)&&hd(C[i].cells[0],C[j].cells[0])<=ST.G)return null}
   const frontier=id=>{const s=new Set();for(const i of C[id].cells)for(const j of NB(i))if(cells[j].c===-1&&!edge(cells[j])&&gapOK(j,id))s.add(j);return[...s]};
@@ -271,6 +273,151 @@ function tryWorld(seed,attempt,style){
     countries, factions:[0,1,2].map(f=>({cap:C[f].cap,home:f})), lanes,
     vb:[-hw-2,-S-2,+(maxx+2*hw+4).toFixed(2),maxy+2*S+4]
   };
+}
+
+// ================= three-way symmetrical maps =================
+// Built on a hexagon-shaped grid. Everything is placed one third at a time: whenever a hex is given to a
+// faction-0 country (or made a lake, mountain or sea lane), the same happens to the two hexes you get by
+// turning the map 120° and 240°, for the matching Blue and Green countries. So every faction gets an
+// identical position.
+const SYMSTYLES={
+  sym:     {name:'Symmetric',      R:12,G:0,contMode:null,   centerLake:0.6,lakes:[1,1],Rh:7.4,Rs:4.4,varied:[0,1],maxLane:3},
+  symisles:{name:'Symmetric Isles',R:13,G:1,contMode:'faction',centerLake:1,lakes:[0,0],Rh:8.4,Rs:5.6,varied:[1,1],maxLane:3,neutral:'center'}
+};
+function tryWorldSym(seed,attempt,style){
+  const ST=SYMSTYLES[style];
+  const rnd=mulberry32((seed+attempt*1000003)>>>0),ri=n=>Math.floor(rnd()*n),rr=(a,b)=>a+ri(b-a+1);
+  const R=ST.R,cells=[],idx=new Map(),K=(q,r)=>q*1000+r;
+  for(let q=-R;q<=R;q++)for(let r=Math.max(-R,-q-R);r<=Math.min(R,-q+R);r++){idx.set(K(q,r),cells.length);cells.push({q,r,x:S*SQ3*(q+r/2),y:S*1.5*r,w:rnd(),c:-1,cap:-1,nb:null,ft:null})}
+  cells.forEach(c=>c.nb=DIRS.map(([dq,dr])=>{const j=idx.get(K(c.q+dq,c.r+dr));return j===undefined?-1:j}));
+  const NB=i=>cells[i].nb.filter(j=>j>=0);
+  const hd=(a,b)=>{const A=cells[a],B=cells[b],dq=A.q-B.q,dr=A.r-B.r;return(Math.abs(dq)+Math.abs(dr)+Math.abs(dq+dr))/2};
+  const center=idx.get(K(0,0));
+  const ROT=cells.map(c=>idx.get(K(-c.q-c.r,c.q)));
+  const rotK=(i,k)=>{for(let z=0;z<k;z++)i=ROT[i];return i};
+  const orbit=i=>[i,ROT[i],ROT[ROT[i]]];
+  const edge=i=>hd(i,center)>=R;
+  // symmetric smooth noise
+  for(let k=0;k<3;k++){const nv=cells.map((c,i)=>{let s=c.w,n=1;for(const j of NB(i)){s+=cells[j].w;n++}return s/n});nv.forEach((v,i)=>cells[i].w=v)}
+  cells.forEach((c,i)=>{if(i===center)return;const o=orbit(i),m=(cells[o[0]].w+cells[o[1]].w+cells[o[2]].w)/3;o.forEach(j=>cells[j].w=m)});
+  const C=[];
+  // country ids: homes 0-2, small countries 3-8, neutrals 9-14; base country b's copy k belongs to faction k
+  const idOf=(b,k)=>b===0?k:b===1?3+2*k:b===2?4+2*k:b===3?9+2*k:10+2*k;
+  for(let k=0;k<3;k++){}
+  const contOf=id=>{if(!ST.contMode)return 0;const k=C[id];return k.f>=0?k.f:3};
+  const gapOK=(j,id)=>{if(!ST.G)return true;const cj=contOf(id);for(const k of NB(j)){const o=cells[k].c;if(o>=0&&contOf(o)!==cj)return false}return true};
+  const put=(i,t)=>orbit(i).forEach(j=>{cells[j].c=-2;cells[j].ft=t});
+  // water first: maybe a central lake, plus small lakes placed three at a time
+  cells[center].c=-2;cells[center].ft='lake';
+  if(rnd()<ST.centerLake)NB(center).forEach(j=>{cells[j].c=-2;cells[j].ft='lake'});
+  const nl=rr(ST.lakes[0],ST.lakes[1]);
+  for(let k=0;k<nl;k++){const o=cells.map((c,i)=>i).filter(i=>cells[i].c===-1&&hd(i,center)>=3&&hd(i,center)<=5);if(!o.length)return null;
+    const blob=[o[ri(o.length)]];put(blob[0],'lake');const tg=2+ri(2);
+    while(blob.length<tg){const fr=[...new Set(blob.flatMap(NB))].filter(j=>cells[j].c===-1&&hd(j,center)>=3&&hd(j,center)<=6&&orbit(j).every(x=>cells[x].c===-1));if(!fr.length)break;const j=fr[ri(fr.length)];put(j,'lake');blob.push(j)}}
+  // seeds for faction 0's countries and the neutrals between faction 0 and 1; copies follow by rotation
+  const th0=rnd()*Math.PI*2,u=(a,r)=>{let b=-1,bd=1e9;const x=r*S*SQ3*Math.cos(a),y=r*S*SQ3*Math.sin(a);cells.forEach((c,i)=>{if(c.c!==-1||edge(i)||i===center)return;const o=orbit(i);if(new Set(o).size<3||o.some(j=>cells[j].c!==-1))return;const d=(c.x-x)**2+(c.y-y)**2;if(d<bd){bd=d;b=i}});return b};
+  const TOT=34+ri(7),h=Math.max(15,TOT-24)+ri(Math.min(20,TOT-16)-Math.max(15,TOT-24)+1),rest=TOT-h,s1=Math.max(8,rest-12)+ri(Math.min(12,rest-8)-Math.max(8,rest-12)+1);
+  const base=[{f:0,L:1,t:h,a:th0,r:ST.Rh},{f:0,L:0,t:s1,a:th0-0.42,r:ST.Rs},{f:0,L:0,t:rest-s1,a:th0+0.42,r:ST.Rs}];
+  // the angle half way between faction 0 and faction 1
+  const hs0=u(th0,ST.Rh);if(hs0<0)return null;const a1=Math.atan2(cells[ROT[hs0]].y,cells[ROT[hs0]].x),am=Math.atan2(Math.sin(th0)+Math.sin(a1),Math.cos(th0)+Math.cos(a1));
+  if(ST.neutral==='center'){base.push({f:-1,L:0,t:8+ri(5),a:am,r:1.8},{f:-1,L:0,t:8+ri(5),a:am,r:3.6})}
+  else{base.push({f:-1,L:0,t:8+ri(5),a:am,r:ST.Rh*0.5-1.2},{f:-1,L:0,t:8+ri(5),a:am,r:ST.Rh*0.5+1.4})}
+  for(let k=0;k<15;k++)C.push(null);
+  for(let b=0;b<5;b++){const s=b===0?hs0:u(base[b].a,base[b].r);if(s<0)return null;
+    for(let k=0;k<3;k++){const id=idOf(b,k),c=rotK(s,k);C[id]={f:base[b].f>=0?k:-1,L:base[b].L,target:base[b].t,cells:[c],base:b,copy:k};cells[c].c=id}}
+  if(ST.G){for(let i=0;i<15;i++)for(let j=i+1;j<15;j++)if(contOf(i)!==contOf(j)&&hd(C[i].cells[0],C[j].cells[0])<=ST.G)return null}
+  // grow base countries; every new hex is copied to the other two thirds
+  const okCell=(j,b)=>{if(cells[j].c!==-1||edge(j)||j===center)return false;const o=orbit(j);if(new Set(o).size<3)return false;
+    for(let k=0;k<3;k++){const x=o[k];if(cells[x].c!==-1)return false;if(!gapOK(x,idOf(b,k)))return false}
+    if(ST.G){for(let k=0;k<3;k++)for(let m=k+1;m<3;m++)if(contOf(idOf(b,k))!==contOf(idOf(b,m))&&hd(o[k],o[m])<=ST.G+1)return false}
+    return true};
+  const grow=(bs,soft)=>{let act=bs.slice();
+    while(act.length){for(const b of act.slice()){const k0=C[idOf(b,0)];if(k0.cells.length>=k0.target){act=act.filter(x=>x!==b);continue}
+      const fr=[...new Set(k0.cells.flatMap(NB))].filter(j=>okCell(j,b));
+      if(!fr.length){if(soft&&k0.cells.length>=6){act=act.filter(x=>x!==b);continue}return false}
+      let best=-1,bs2=-1e9;for(const j of fr){let sc=NB(j).filter(n=>cells[n].c===idOf(b,0)).length*1.1+cells[j].w*2.5+rnd()*0.9;if(b===0)sc+=0.05*hd(j,center);if(b===1||b===2)sc-=0.35*hd(j,C[0].cells[0]);if(sc>bs2){bs2=sc;best=j}}
+      orbit(best).forEach((x,k)=>{cells[x].c=idOf(b,k);C[idOf(b,k)].cells.push(x)})}}
+    return true};
+  if(!grow([0,1,2]))return null;
+  if(!grow([3,4],true))return null;
+  const pockets=()=>{const oc=new Set(),st=[];cells.forEach((c,i)=>{if(edge(i)&&c.c===-1){oc.add(i);st.push(i)}});
+    while(st.length){const x=st.pop();for(const y of NB(x))if(cells[y].c===-1&&!oc.has(y)){oc.add(y);st.push(y)}}
+    cells.forEach((c,i)=>{if(c.c===-1&&!oc.has(i)){c.c=-2;c.ft='lake'}})};
+  pockets();
+  // mountains, three at a time; undo a clump that would split a country
+  const split=ids=>ids.some(id=>{const ks=C[id].cells;if(!ks.length)return true;const seen=new Set([ks[0]]),q=[ks[0]];while(q.length){const x=q.pop();for(const y of NB(x))if(cells[y].c===id&&!seen.has(y)){seen.add(y);q.push(y)}}return seen.size!==ks.length});
+  {const nm=1+ri(2);
+   for(let m=0;m<nm;m++){const cand=cells.map((c,i)=>i).filter(i=>cells[i].c>=0&&!edge(i)&&NB(i).every(j=>cells[j].c>=0)&&new Set(orbit(i)).size===3);if(!cand.length)break;
+     const blob=[cand[ri(cand.length)]],size=1+ri(3);
+     while(blob.length<size){const fr=[...new Set(blob.flatMap(NB))].filter(j=>cells[j].c>=0&&!blob.includes(j)&&!orbit(j).some(x=>blob.includes(x)));if(!fr.length)break;blob.push(fr[ri(fr.length)])}
+     const all=blob.flatMap(orbit),was=all.map(i=>cells[i].c);
+     all.forEach(i=>{const id=cells[i].c;C[id].cells=C[id].cells.filter(x=>x!==i);cells[i].c=-2;cells[i].ft='mtn'});
+     if(split([...new Set(was)]))all.forEach((i,k)=>{cells[i].c=was[k];cells[i].ft=null;C[was[k]].cells.push(i)});
+   }
+   // top faction countries back up, three at a time, into open water
+   for(const b of [0,1,2]){const k0=C[idOf(b,0)];
+     while(k0.cells.length<k0.target){const fr=[...new Set(k0.cells.flatMap(NB))].filter(j=>okCell(j,b));if(!fr.length)return null;
+       const j=fr.sort((x,y)=>NB(y).filter(n=>cells[n].c===idOf(b,0)).length-NB(x).filter(n=>cells[n].c===idOf(b,0)).length)[0];
+       orbit(j).forEach((x,k)=>{cells[x].c=idOf(b,k);C[idOf(b,k)].cells.push(x)})}}
+   pockets();
+   if(C.some(k=>k.f<0&&k.cells.length<6))return null;
+   if(split(C.map((k,i)=>i)))return null;
+  }
+  let land=cells.map((c,i)=>i).filter(i=>cells[i].c>=0);
+  cells.forEach((c,i)=>{if(c.ft==='mtn'&&!NB(i).some(j=>cells[j].c>=0)){c.ft=null;c.c=-1}});
+  {const q=cells.map((c,i)=>i).filter(i=>cells[i].c===-1),seen=new Set(q);
+   while(q.length){const x=q.pop();for(const y of NB(x))if(!seen.has(y)&&cells[y].ft==='lake'&&y!==center&&hd(y,center)>1){seen.add(y);cells[y].ft=null;cells[y].c=-1;q.push(y)}}}
+  // sea lanes, always added three at a time
+  const lanes=[],longLanes=new Set();
+  const water=i=>!edge(i)&&cells[i].c<0&&cells[i].ft!=='mtn'&&i!==center;
+  const fOf=i=>C[cells[i].c].f,isHome=i=>C[cells[i].c].L&&fOf(i)>=0;
+  const pairOK=(a,b)=>{const fa=fOf(a),fb=fOf(b);if(fa>=0&&fb>=0&&fa!==fb)return false;if(isHome(a)&&fb>=0&&fb!==fa)return false;if(isHome(b)&&fa>=0&&fa!==fb)return false;return true};
+  const adjLand=i=>NB(i).some(j=>cells[j].c>=0);
+  const routeWater=(starts,goal,maxLen,pen)=>{const dist=new Map(),len=new Map(),prev=new Map(),from=new Map(),open=[];
+    for(const s of starts){if(!water(s.w)||dist.has(s.w))continue;dist.set(s.w,1+(adjLand(s.w)?pen:0));len.set(s.w,1);from.set(s.w,s.from);open.push(s.w)}
+    while(open.length){let bi=0;for(let k=1;k<open.length;k++)if(dist.get(open[k])<dist.get(open[bi]))bi=k;
+      const w=open.splice(bi,1)[0],g=goal(w,len.get(w),from.get(w));
+      if(g!=null){const path=[w];let x=w;while(prev.has(x)){x=prev.get(x);path.unshift(x)}return{path,end:g,start:from.get(w)}}
+      if(len.get(w)>=maxLen)continue;
+      for(const y of NB(w)){if(!water(y))continue;const nd=dist.get(w)+1+(adjLand(y)?pen:0);if(!dist.has(y)||nd<dist.get(y)){dist.set(y,nd);len.set(y,len.get(w)+1);prev.set(y,w);from.set(y,from.get(w));if(!open.includes(y))open.push(y)}}}
+    return null};
+  const startsFrom=src=>{const out=[];src.forEach(a=>NB(a).forEach(w=>{if(water(w))out.push({w,from:a})}));return out};
+  const landGoal=(isT,minLen,check)=>(w,l,from)=>{if(l<minLen)return null;for(const b of NB(w))if(cells[b].c>=0&&isT(b)&&(!check||check(from,b)))return b;return null};
+  const addLane3=(p,long)=>{for(let k=0;k<3;k++){const q=p.map(i=>rotK(i,k));lanes.push(q);if(long)longLanes.add(q);q.slice(1,-1).forEach(i=>{cells[i].c=-3;cells[i].ft='lane'})}};
+  const pass=i=>cells[i].c>=0||cells[i].c===-3;
+  const groups=()=>{const g=new Array(cells.length).fill(-1);let n=0;land.forEach(i=>{if(g[i]>=0)return;const q=[i];g[i]=n;while(q.length){const x=q.pop();for(const y of NB(x))if(pass(y)&&g[y]<0){g[y]=n;q.push(y)}}n++});return{g,n}};
+  for(let it=0;it<8;it++){const {g,n}=groups();if(n<=1)break;
+    let best=null;for(let A=0;A<n;A++){const As=land.filter(i=>g[i]===A);const r=routeWater(startsFrom(As),landGoal(b=>g[b]!==A,1,pairOK),ST.maxLane,0.5);if(r&&(!best||r.path.length<best.path.length))best=r}
+    if(!best)return null;addLane3([best.start,...best.path,best.end],false)}
+  {const want=rr(ST.varied[0],ST.varied[1]);let made=0;
+   for(let k=0;k<20&&made<want;k++){const a=land[ri(land.length)];if(!NB(a).some(water))continue;const {g}=groups();
+     const r=routeWater(startsFrom([a]),landGoal(b=>cells[b].c!==cells[a].c&&hd(a,b)>=5,2,pairOK),6,1.5);if(r){addLane3([r.start,...r.path,r.end],false);made++}}}
+  if(groups().n>1)return null;
+  // checks: neutrals reach factions; homes never border an enemy; faction land in one piece
+  const touch=C.map(()=>new Set());
+  land.forEach(i=>NB(i).forEach(j=>{if(cells[j].c>=0&&cells[j].c!==cells[i].c)touch[cells[i].c].add(cells[j].c)}));
+  lanes.forEach(p=>{if(longLanes.has(p))return;const a=cells[p[0]].c,b=cells[p[p.length-1]].c;if(a>=0&&b>=0&&a!==b){touch[a].add(b);touch[b].add(a)}});
+  for(let f=0;f<3;f++)if([...touch[f]].some(o=>C[o].f>=0&&C[o].f!==f))return null;
+  if(!C.some((k,i)=>k.f<0&&[...touch[i]].some(o=>C[o].f>=0)))return null;
+  for(let f=0;f<3;f++){const mine=land.filter(i=>C[cells[i].c].f===f),ok=i=>(cells[i].c>=0&&C[cells[i].c].f===f)||cells[i].c===-3;
+    const seen=new Set([mine[0]]),q=[mine[0]];while(q.length){const x=q.pop();for(const y of NB(x))if(ok(y)&&!seen.has(y)){seen.add(y);q.push(y)}}if(mine.some(i=>!seen.has(i)))return null}
+  // capitals chosen for faction 0's countries and copied
+  for(let b=0;b<5;b++){const k0=C[idOf(b,0)];let best=-1,bs=-1e9;for(const i of k0.cells){let sc=rnd()*0.8;for(const j of k0.cells)if(hd(i,j)<=2)sc++;if(sc>bs){bs=sc;best=i}}
+    for(let k=0;k<3;k++){const c=rotK(best,k);C[idOf(b,k)].cap=c;cells[c].cap=idOf(b,k)}}
+  {const tmp={cells:cells.map(c=>({l:c.c>=0?1:0,nb:c.nb,cap:c.cap}))};const own=cells.map(c=>c.c>=0?C[c.c].f:-2);if(encircleOwners(tmp,own,new Set(),[-1]).length)return null}
+  const used=new Set(),capz=s=>s[0].toUpperCase()+s.slice(1);
+  const cName=()=>{for(let z=0;z<80;z++){const n=capz(SYL[ri(SYL.length)]+(rnd()<0.5?SYL[ri(SYL.length)]:'')+CEND[ri(CEND.length)]);if(!used.has(n)){used.add(n);return n}}return 'Country '+used.size};
+  // shift coordinates so everything is positive
+  let minx=1e9,miny=1e9;cells.forEach(c=>{minx=Math.min(minx,c.x);miny=Math.min(miny,c.y)});
+  cells.forEach(c=>{c.x=+(c.x-minx+S).toFixed(2);c.y=+(c.y-miny+S).toFixed(2)});
+  const countries=C.map(k=>{let mx=0,my=0;k.cells.forEach(i=>{mx+=cells[i].x;my+=cells[i].y});mx/=k.cells.length;my/=k.cells.length;
+    let b=k.cells[0],bd=1e9;k.cells.forEach(i=>{if(i===k.cap)return;const d=(cells[i].x-mx)**2+(cells[i].y-my)**2;if(d<bd){bd=d;b=i}});
+    return{name:cName(),f:k.f,L:k.L,cap:k.cap,n:k.cells.length,lx:cells[b].x,ly:cells[b].y}});
+  let maxx=0,maxy=0;cells.forEach(c=>{maxx=Math.max(maxx,c.x);maxy=Math.max(maxy,c.y)});
+  const hw=S*SQ3/2;
+  return{cells:cells.map(c=>{const o={q:c.q,r:c.r,x:c.x,y:c.y,l:c.c>=0?1:0,c:c.c,nb:c.nb,cap:c.cap};if(c.ft)o.ft=c.ft;return o}),
+    countries,factions:[0,1,2].map(f=>({cap:C[f].cap,home:f})),lanes,sym:true,
+    vb:[-hw-2,-S-2,+(maxx+2*hw+4).toFixed(2),maxy+2*S+4]};
 }
 
 // ================= game state =================
@@ -614,7 +761,7 @@ function aiThreat(g,f){ // enemy armies that could reach each hex next turn
 function aiPlace2(g,f){
   const M=g.map,home=homeHexes(g,f),cap=M.factions[f].cap;
   const front=distFrom(g,M.cells.map((c,i)=>i).filter(i=>M.cells[i].l&&g.owner[i]!==f));
-  const edge=home.filter(h=>h!==cap).sort((a,b)=>(front.get(a)||99)-(front.get(b)||99));
+  const edge=home.filter(h=>h!==cap).sort((a,b)=>(front.get(a)||99)-(front.get(b)||99)+Math.random()*1.6-0.8);
   // a solid guard at the capital, the rest in two groups on the side nearest the action
   const out=[{c:cap,n:4}];if(edge[0]!=null)out.push({c:edge[0],n:3});if(edge[3]!=null)out.push({c:edge[3],n:3});else if(edge[1]!=null)out.push({c:edge[1],n:3});
   return cleanPlace(g,f,out);
@@ -629,14 +776,15 @@ function aiRecruits2(g,f){
   for(const c of caps){const need=Math.ceil(th[c]*(c===fcap?1.1:0.5))-armiesAt(g,c,f);if(need>0)add(c,need)}
   // then build up at the capitals closest to enemies (or to unclaimed land)
   const ed=distFrom(g,g.st.filter(a=>a.f!==f).map(a=>a.c)),fr=distFrom(g,M.cells.map((c,i)=>i).filter(i=>M.cells[i].l&&g.owner[i]!==f));
-  const spots=caps.slice().sort((a,b)=>((ed.get(a)??99)+(fr.get(a)??99)*0.5)-((ed.get(b)??99)+(fr.get(b)??99)*0.5)).slice(0,2);
+  const spots=caps.slice().sort((a,b)=>((ed.get(a)??99)+(fr.get(a)??99)*0.5)-((ed.get(b)??99)+(fr.get(b)??99)*0.5)+Math.random()*2-1).slice(0,2);
   let i=0;while(k>0){add(spots[i%spots.length],1);i++}
   return out;
 }
 function aiOrders2(g,f){
   const M=g.map,orders=[],inB=battleSet(g),fcap=M.factions[f].cap,th=aiThreat(g,f);
   const enemyAt=h=>{let n=0;for(const a of g.st)if(a.c===h&&a.f!==f)n+=a.n;return n};
-  const mine=g.st.filter(a=>a.f===f);
+  const jit=()=>0.85+0.3*Math.random(),shuf=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+  const mine=shuf(g.st.filter(a=>a.f===f));
   const avail=new Map(mine.map(a=>[a.c,a.n]));
   const capsOwned=new Set(M.countries.map(c=>c.cap).filter(c=>g.owner[c]===f));
   const isFcapOf=h=>M.factions.findIndex((F,k)=>F.cap===h&&k!==f&&g.players[k].alive);
@@ -672,11 +820,11 @@ function aiOrders2(g,f){
       req.push({h,need,val:6+e*0.5+(cap?6:0)+(fc?80:0)+(th[fcap]>0&&hexDist(M,h,fcap)<=MOVE+1?8:0),kind:'attack'})}
   }));
   // 5. fill requests, best value per army first; attacks only if enough armies can get there this turn
-  req.sort((x,y)=>y.val/y.need-x.val/x.need);
+  req.forEach(r=>r.val*=jit());shuf(req);req.sort((x,y)=>y.val/y.need-x.val/x.need);
   const claimed=new Set();
   for(const r of req){
     if(claimed.has(r.h)&&r.kind==='grab')continue;
-    const sources=[...reach.entries()].filter(([c,rr])=>rr.dist.has(r.h)&&c!==r.h&&(avail.get(c)||0)>0).sort((x,y)=>x[1].dist.get(r.h)-y[1].dist.get(r.h));
+    const sources=shuf([...reach.entries()].filter(([c,rr])=>rr.dist.has(r.h)&&c!==r.h&&(avail.get(c)||0)>0)).sort((x,y)=>x[1].dist.get(r.h)-y[1].dist.get(r.h));
     const supply=sources.reduce((s,[c])=>s+avail.get(c),0);
     if(r.kind==='attack'&&supply<r.need)continue;
     let need=r.kind==='attack'?Math.max(r.need,Math.min(supply,Math.ceil(r.need*1.3))):r.need;
@@ -687,7 +835,7 @@ function aiOrders2(g,f){
   // 6. big idle stacks attack the nearest enemy army they clearly outnumber, even several turns away
   for(const a of mine){const n=avail.get(a.c)||0;if(n<8)continue;
     const rr=reach.get(a.c)||reachFor(g,f,a.c,false);let best=null;
-    rr.dist.forEach((d,h)=>{const e=enemyAt(h);if(!e||n<e*1.25+1)return;const sc=e+(isLand(M,h)&&M.cells[h].cap>=0?5:0)-d;if(!best||sc>best.sc)best={h,sc}});
+    rr.dist.forEach((d,h)=>{const e=enemyAt(h);if(!e||n<e*1.25+1)return;const sc=e+(isLand(M,h)&&M.cells[h].cap>=0?5:0)-d+Math.random()*2;if(!best||sc>best.sc)best={h,sc}});
     if(best){orders.push({from:a.c,n,path:pathTo(rr,a.c,best.h)});avail.set(a.c,0)}}
   // 7. spare armies march toward the best front, several turns ahead if need be (sea lanes included)
   const goals=M.cells.map((c,i)=>i).filter(i=>{if(!isLand(M,i))return false;const o=g.owner[i];return o!==f});
@@ -696,7 +844,7 @@ function aiOrders2(g,f){
     const rr=reach.get(a.c)||reachFor(g,f,a.c,false);
     const here=(gd.get(a.c)??99)+(ed.get(a.c)??99)*0.3;
     let best=null;rr.dist.forEach((d,h)=>{if(h===a.c||enemyAt(h))return;if(isLand(M,h)&&g.owner[h]!==f)return;
-      const sc=(gd.get(h)??99)+(ed.get(h)??99)*0.3+(isLane(M,h)?0.6:0)-Math.min(2,(armiesAt(g,h,f))*0.05);
+      const sc=(gd.get(h)??99)+(ed.get(h)??99)*0.3+(isLane(M,h)?0.6:0)-Math.min(2,(armiesAt(g,h,f))*0.05)+Math.random()*0.8;
       if(!best||sc<best.sc)best={h,sc}});
     if(best&&best.sc<here-0.5)orders.push({from:a.c,n,path:pathTo(rr,a.c,best.h)});
   }
@@ -718,4 +866,4 @@ function advance(g){
     if(g.players.some(p=>p.alive&&!p.ai))return;
   }
 }
-if(typeof module!=='undefined')module.exports={aiOrders2,aiRecruits2,aiPlace2,isLane,passable,STYLES,genWorld,genWorldAny,newGame,startPlay,resolveTurn,advance,aiOrders,aiPlace,aiRecruits,reachFor,pathTo,battleSet,incomeOf,landCount,armyCount,armiesAt,normalize,encircleOwners,cleanPlace,homeHexes,setRoll,hexDist,START_ARMIES,ARMY_COST,MOVE,ROUNDS,INCOME,NF};
+if(typeof module!=='undefined')module.exports={SYMSTYLES,aiOrders2,aiRecruits2,aiPlace2,isLane,passable,STYLES,genWorld,genWorldAny,newGame,startPlay,resolveTurn,advance,aiOrders,aiPlace,aiRecruits,reachFor,pathTo,battleSet,incomeOf,landCount,armyCount,armiesAt,normalize,encircleOwners,cleanPlace,homeHexes,setRoll,hexDist,START_ARMIES,ARMY_COST,MOVE,ROUNDS,INCOME,NF};
