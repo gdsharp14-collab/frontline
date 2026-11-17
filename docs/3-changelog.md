@@ -28,6 +28,15 @@ Agreed changes go here until I say "build". Each one is cleared once it's built.
 - **Random maps stay** as an option alongside the named maps.
 - **Order of work:** (1) sea lanes and layout styles, with sample maps to review; (2) a modest computer-player upgrade (using sea lanes, holding chokepoints, gathering bigger attacks), tested by playing the new bot against the old one; (3) the simulation tool and map selection.
 
+### Progress on v0.5.0 (work in progress, not live)
+Work in progress is saved on the GitHub branch **`v0.5-dev`** (folder `dev/`), separate from the live game.
+- **Step 1 done (Nov 16):** sea lanes and layout styles in a development copy of the map generator; sample maps reviewed.
+- **Step 2 done (Nov 16): computer player v2.** It plans each turn as a whole: it estimates where enemy armies could strike next turn, keeps enough armies on its capitals, pools armies from several stacks for attacks it expects to win, grabs land with single armies, crosses sea lanes, and marches spare armies toward the front over several turns.
+  - **Against two copies of the old player:** v2 won **59%** of 150 games across five map styles (33% would mean no better), and lost its capital in only 2 of them.
+  - **Three v2 players against each other:** games are decisive, with about one elimination per game and the winner holding 75–93% of the land at the end.
+- **Claude's decision while building the sea-lane rules:** armies in a battle may also **retreat into an empty sea-lane hex** next to them, not only into their own land.
+- **Next: step 3**, the simulation tool and picking the named maps.
+
 ## Versions
 Newest first. "GitHub" is the saved version on GitHub; the live game always shows the newest one there.
 
