@@ -20,6 +20,7 @@ Agreed changes go here until I say "build". Each one is cleared once it's built.
 - **Long-range routes round the outside of the map** between factions: **either all three pairs of factions get one, or none do**, for balance. Two methods, both kept for testing in the simulations:
   - **Method A, islands halfway:** a small neutral island (3–6 hexes, with its own $2 capital) out at sea, with a lane to it from each of the two factions.
   - **Method B, direct long lanes:** one long lane (5–15 hexes) straight from one faction's land to the other's. The only exception to "home countries never border an enemy"; the length is the barrier.
+- **Mixing styles is fine:** e.g. half the map like Continents and half like Archipelago, or long routes round the outside added to Inland Sea maps.
 
 **Balanced named maps**
 - Pick **5 (or 6) named maps** that are fairly balanced between the three positions, chosen with a simulation tool: generate a few hundred candidate maps, play each many times with computer players, keep the ones where each position wins close to a third of the time, and I pick my favourites.
