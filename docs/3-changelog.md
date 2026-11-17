@@ -12,8 +12,14 @@ Agreed changes go here until I say "build". Each one is cleared once it's built.
 - **Never owned:** sea-lane hexes stay neutral and never count for income or victory.
 - *Claude's suggestions, not objected to:* battles in a sea-lane hex are meeting battles (3 dice each, a tie costs both); armies may stay in a sea-lane hex to block it; sea lanes count as walls for encirclement. On the map, sea lanes are lighter blue with a dotted route.
 
-**Layout styles**
-- New layout styles in the generator, e.g. one landmass broken up by seas, three continents, and an archipelago. The map may need to be a bit larger.
+**Layout styles** (sample maps reviewed Nov 16)
+- **Classic** (as now), **Continents** (each faction on its own continent around a central neutral continent), **Archipelago** (every country its own island) and **Inland Sea** (land around a big central sea; kept as one option among the others, not a favourite). Continents and Archipelago use a larger grid.
+- **Sea-lane routes prefer open water**, crossing seas rather than hugging coasts.
+- **Varied lane lengths:** the shortest crossings join every landmass, plus a few longer lanes; lengths range from 1 to about 15 hexes. Lanes longer than 3 hexes take more than one turn to cross, so armies end their turn at sea.
+- **Inland Sea:** a hub in the middle of the sea is joined by sea lanes to 6 landing points spread round the shore, so every landing point connects to every other.
+- **Long-range routes round the outside of the map** between factions: **either all three pairs of factions get one, or none do**, for balance. Two methods, both kept for testing in the simulations:
+  - **Method A, islands halfway:** a small neutral island (3–6 hexes, with its own $2 capital) out at sea, with a lane to it from each of the two factions.
+  - **Method B, direct long lanes:** one long lane (5–15 hexes) straight from one faction's land to the other's. The only exception to "home countries never border an enemy"; the length is the barrier.
 
 **Balanced named maps**
 - Pick **5 (or 6) named maps** that are fairly balanced between the three positions, chosen with a simulation tool: generate a few hundred candidate maps, play each many times with computer players, keep the ones where each position wins close to a third of the time, and I pick my favourites.
