@@ -5,7 +5,14 @@
 ## Waiting for next build
 Agreed changes go here until I say "build". Each one is cleared once it's built.
 
-- *Nothing agreed yet.*
+### Fog of war (agreed Nov 18, planned as v0.6.0)
+- **Display-only fog.** The game doesn't draw what you shouldn't see. The full game is still downloaded to every phone, so someone technical could dig it out; that's accepted for now. True server-side secrecy (Firebase Cloud Functions, needs the Blaze plan) stays a possible later upgrade.
+- **What you can see:** every hex you own, every hex next to your land, and every hex within 2 hexes of any of your armies (including armies on sea lanes).
+- **Map and ownership stay visible** everywhere. Hexes you can't currently see are shaded darker so you can tell them apart.
+- **Hidden in fog:** enemy armies, other players' money, recruits (unless placed on a capital you can see), and battles between other factions out of your sight. Your own battles are always shown. The replay and war log only show what you saw. Other players' army totals show "?".
+- **Last-seen markers:** if an enemy army was on a hex and you lose sight of that hex, a faded marker with the size you last saw stays there for one turn, then disappears. No marker is left if you saw the army move away, and an army that moves from a hex you can see into fog leaves no marker anywhere.
+- **Moving into fog:** no new rule. Entering a hex with enemy armies still ends your move and starts a battle.
+- **Computer player** only sees what a human in its seat would see, using the same last-seen rules.
 
 ## Versions
 Newest first. "GitHub" is the saved version on GitHub; the live game always shows the newest one there.
