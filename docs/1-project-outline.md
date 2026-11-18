@@ -1,6 +1,6 @@
 # Warsea Conquest — Project Outline
 
-*Last updated: November 14, 2026 · Current version: **v0.4.0** (live, confirmed playable)*
+*Last updated: November 18, 2026 · Current version: **v0.5.0** (live)*
 
 ## What this is
 A WWII-era hex strategy wargame for me and 2 friends to play on our **Android phones**, from different places. Everyone submits orders, then the turn plays out for all three at once. Turns happen whenever we're all ready.
@@ -15,6 +15,7 @@ A WWII-era hex strategy wargame for me and 2 friends to play on our **Android ph
 | **GitHub** — `gdsharp14-collab/frontline` | `index.html` plus a copy of these docs | **The master copy.** Every version is saved here with a note, so any version can be restored |
 | **Live game** — https://gdsharp14-collab.github.io/frontline/ | Whatever is on GitHub | What we play. Updates a minute or two after GitHub changes |
 | **Claude Project** — "Warsea Conquest" | `index.html` and the 3 docs below | Claude's working copies, kept identical to GitHub after every build |
+| **GitHub branch `v0.5-dev`** | Development copy of the engine, map simulation tool and results | Work in progress and tools for future map work; not part of the live game |
 | **Firebase** — project `frontline-game-cf9e5` | Saved games | The database. No code lives here |
 | **Documents\Warsea Conquest** (my PC) | Older copies | Backup only. Not kept up to date |
 
@@ -43,16 +44,16 @@ Each version's GitHub code is recorded in the changelog, and the version number 
 | 0. Clean-up | One set of docs, GitHub as the master copy, version history recorded | **Done** (Nov 12) |
 | 1. Simplify the rules | Cut the rules down to what's fun and playable on a phone | **Done** (v0.4.0, Nov 12) |
 | 2. Go live | Play the game for real on our phones. Fix what breaks | **Milestone reached** (Nov 14): v0.4.0 plays well and follows all the agreed rules |
+| 2b. Map-making | Sea lanes, new map styles, balanced named maps, a stronger computer player | **Done** (v0.5.0, Nov 18) |
 | 3. Tune → v1.0 | Adjust the numbers (battle rounds, starting armies, costs, income) after real games | Not started |
 | 4. Add-ons, one at a time | Each one played before the next starts. Likely order: "your turn" notifications, ships, aircraft, technology | Not started |
 
 Fog of war and hidden units are parked until we know whether they're possible: they may need code on a server, and I don't know whether the free Firebase plan allows that.
 
-## Status (Nov 14, 2026)
-- **Milestone: v0.4.0 is the first confirmed playable version.** I played it on Nov 14 and it plays well and follows all the rules we agreed.
-- The live game runs on real Firebase (games are created and saved).
-- GitHub is connected to Claude, so Claude saves each release there directly.
-- **Next:** future stages. Start from the open questions below and the ideas list in the game rules doc (section 10).
+## Status (Nov 18, 2026)
+- **v0.5.0 is live:** sea lanes, three named maps (Symmetric, Archipelago, Continental) plus random maps, and computer player v2.
+- v0.4.0 was confirmed playable on Nov 14; v0.5.0 hasn't been played on real phones yet.
+- **Next:** play v0.5.0, then the open questions below.
 
 ## Progress so far
 | Date | What happened |
@@ -61,6 +62,8 @@ Fog of war and hidden units are parked until we know whether they're possible: t
 | Nov 1, 2026 | Redesigned as a WWII-era hex game and built in three stages: map and movement (v0.1), combat with hit points (v0.2), economy with four currencies and supply lines (v0.3) |
 | Nov 12, 2026 | Stepped back to simplify. Reorganized the project (GitHub as the master copy, three docs, version numbers). Agreed a much simpler, Risk-style rule set and built it as v0.4.0 |
 | Nov 14, 2026 | Played v0.4.0 and confirmed it works: first milestone reached |
+| Nov 16, 2026 | Map-making: sea lanes, new map styles, computer player v2, and 36,000 simulated games to find balanced maps |
+| Nov 18, 2026 | Picked three named maps and released v0.5.0 |
 
 ## Key decisions so far, and why
 **How the project is run (Nov 12)**
@@ -87,6 +90,13 @@ The goal: **keep the simplicity of Risk, which my friends and I enjoy, but add a
 - **Small countries act as a buffer:** each home country sits at the back, behind its two small countries, never touching an enemy. Each faction's land always starts in one connected piece.
 - **Ports removed**, since supply lines are gone. Ocean, lakes and mountains count as walls for encirclement.
 
+**Map-making (Nov 16–18, built as v0.5.0)**
+- **Sea lanes** break the land into continents and islands, because every map used to be one solid blob. Armies cross them freely (a lane doesn't end a move), so crossings work like bridges, and long lanes take more than one turn. Sea lanes are never owned.
+- **Long routes round the outside** are added for all three pairs of factions or for none, for balance.
+- **Balance is measured, not guessed:** candidate maps were each played 200 times by computer players. To make that fair, the computer player varies its choices from game to game; without that, even three identical positions came out as unfair as 9% / 86% / 6%.
+- **Random maps are usually unfair** (one position wins about two thirds of the time), so the game offers **three tested named maps**. Random maps stay as an option.
+- **Computer player v2:** needed so the simulations (and solo games) mean something; it's clearly stronger than the old one.
+
 **The order screen (Nov 12)**
 - Because every army can now move each turn, the screen shows what's left to do: gold outlines on armies waiting for orders, a **Next ▶** button, − / + / All for splitting, and a Submit button that says how many armies aren't moving.
 
@@ -96,7 +106,9 @@ The goal: **keep the simplicity of Risk, which my friends and I enjoy, but add a
 - **Supply lines:** bring them back in some form?
 - **Terrain and more unit types:** bring any back later?
 - **The ideas list** in the game rules doc (section 10): naval units, air power, guerrillas, fog of war, technology, "your turn" notifications.
-- **Computer player:** it's mainly for testing and is fairly cautious; improve it if we want better solo games.
+- **Symmetric map:** fair, but in testing almost no one gets eliminated; games are decided by land at turn 50. Keep it, or look for a more decisive symmetrical map?
+- **More named maps:** the simulation tool on the `v0.5-dev` branch can test new candidates whenever we want more.
+- **Computer player:** v2 is much better than v1, but people may still find weaknesses (and map advantages it misses).
 
 ## Technical details
 - **Firebase:** free Spark plan, Firestore database plus anonymous sign-in. The web config (apiKey etc.) is inside `index.html`. These values aren't secret; the database rules control access.

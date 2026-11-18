@@ -112,6 +112,8 @@ polygon.land{stroke:rgba(0,0,0,.25);stroke-width:.35}
 .brow.off{opacity:.55}.brow .chip{min-height:0;padding:6px 9px;font-size:13px;line-height:1.2}
 .clash{font-size:5px;text-anchor:middle;fill:#fff;paint-order:stroke;stroke:#b3261e;stroke-width:1.4px}
 polygon.lake{fill:#1f5f8f;stroke:#16496e;stroke-width:.35}
+polygon.lanehex{fill:#2f78ad;stroke:rgba(255,255,255,.3);stroke-width:.4}
+.route{fill:none;stroke:#fff;stroke-width:1;stroke-dasharray:1.6 1.6;stroke-linecap:round;opacity:.75;pointer-events:none}
 polygon.mtn{fill:#0b0b0b;stroke:#000;stroke-width:.35}
 .g-wave{fill:none;stroke:#7fb6dd;stroke-opacity:.6;stroke-width:.5;pointer-events:none}
 .g-peak{fill:none;stroke:#5a5a5a;stroke-width:.7;stroke-linejoin:round;pointer-events:none}
@@ -217,22 +219,34 @@ function setRoll(fn){ROLL=fn}
 function hexDist(M,a,b){const A=M.cells[a],B=M.cells[b],dq=A.q-B.q,dr=A.r-B.r;return(Math.abs(dq)+Math.abs(dr)+Math.abs(dq+dr))/2}
 const nbs=(M,i)=>M.cells[i].nb.filter(j=>j>=0);
 const isLand=(M,i)=>i>=0&&!!M.cells[i]&&M.cells[i].l===1;
+const isLane=(M,i)=>i>=0&&!!M.cells[i]&&M.cells[i].ft==='lane';
+const passable=(M,i)=>isLand(M,i)||isLane(M,i); // sea lanes can be crossed but never owned
 
 // ================= world generation =================
 // Each faction gets a home country at the back of the map with two small countries in front of it as a buffer.
 // Six neutral countries fill the gaps. Inland lakes are placed first; clumps of impassable mountains are carved
 // out afterwards. Every faction starts with exactly the same number of hexes, in one connected territory.
-function genWorld(seed){
-  for(let a=0;a<120;a++){const w=tryWorld(seed,a);if(w){w.seed=seed;return w}}
+function genWorld(seed,style){
+  style=style||'classic';
+  for(let a=0;a<160;a++){const w=(typeof SYMSTYLES!=='undefined'&&SYMSTYLES[style])?tryWorldSym(seed,a,style):tryWorld(seed,a,style);if(w){w.seed=seed;w.style=style;return w}}
   return null;
 }
-function genWorldAny(seed){ // keeps trying new seeds until a map works
-  for(let k=0;k<40;k++){const w=genWorld(seed);if(w)return w;seed=(seed*48271+11)%2147483647}
+function genWorldAny(seed,style){
+  for(let k=0;k<40;k++){const w=genWorld(seed,style);if(w)return w;seed=(seed*48271+11)%2147483647}
   return null;
 }
-function tryWorld(seed,attempt){
-  const rnd=mulberry32((seed+attempt*1000003)>>>0), ri=n=>Math.floor(rnd()*n);
-  const {cols,rows}=GRID, cells=[], idx=new Map(), K=(q,r)=>q*1000+r;
+// layout styles: grid size, how land is split into separate landmasses, gap between them, and sea features
+const STYLES={
+  classic:    {name:'Classic',     grid:{cols:21,rows:23},cont:null,     G:0,lakes:[2,3],bigSea:0,Rh:6.0,Rs:3.5,maxLane:3},
+  inlandsea:  {name:'Inland Sea',  grid:{cols:27,rows:29},cont:null,     G:0,lakes:[0,1],bigSea:1,Rh:6.8,Rs:4.6,maxLane:4},
+  continents: {name:'Continents',  grid:{cols:27,rows:29},cont:'faction',G:1,lakes:[0,1],bigSea:0,Rh:7.6,Rs:5.0,maxLane:3,extra:0.5,neutral:'center',varied:[2,3],long:'direct',longN:[1,2]},
+  mixed:      {name:'Mixed',       grid:{cols:27,rows:29},cont:'mixed',  G:1,lakes:[0,1],bigSea:0,Rh:7.6,Rs:4.8,maxLane:3,extra:0.35,varied:[1,3],long:null,longN:[3,3]},
+  archipelago:{name:'Archipelago', grid:{cols:27,rows:29},cont:'country',G:1,lakes:[0,0],bigSea:0,Rh:7.6,Rs:4.8,maxLane:3,extra:0.25,varied:[1,2],long:'direct',longN:[1,2]}
+};
+function tryWorld(seed,attempt,style){
+  const ST=STYLES[style]||STYLES.classic;
+  const rnd=mulberry32((seed+attempt*1000003)>>>0), ri=n=>Math.floor(rnd()*n), rr=(a,b)=>a+ri(b-a+1);
+  const {cols,rows}=ST.grid, cells=[], idx=new Map(), K=(q,r)=>q*1000+r;
   for(let row=0;row<rows;row++)for(let col=0;col<cols;col++){
     const q=col-((row-(row&1))>>1); idx.set(K(q,row),cells.length);
     cells.push({q,r:row,col,row,x:+(S*SQ3*(col+0.5*(row&1))).toFixed(2),y:S*1.5*row,w:rnd(),c:-1,cap:-1,nb:null,ft:null});
@@ -244,32 +258,42 @@ function tryWorld(seed,attempt){
   const hd=(a,b)=>{const A=cells[a],B=cells[b],dq=A.q-B.q,dr=A.r-B.r;return(Math.abs(dq)+Math.abs(dr)+Math.abs(dq+dr))/2};
   const center=Math.floor(rows/2)*cols+Math.floor(cols/2);
   const nearest=(x,y)=>{let b=-1,bd=1e9;cells.forEach((c,i)=>{if(edge(c)||c.c!==-1)return;const d=(c.x-x)**2+(c.y-y)**2;if(d<bd){bd=d;b=i}});return b};
+  // cells within distance G (for keeping a sea gap between landmasses)
+  const ring=i=>{const out=[],seen=new Set([i]);let fr=[i];for(let d=0;d<ST.G;d++){const nx=[];for(const x of fr)for(const y of NB(x))if(!seen.has(y)){seen.add(y);out.push(y);nx.push(y)}fr=nx}return out};
+  const RING=ST.G?cells.map((c,i)=>ring(i)):null;
   const C=[];
-  // inland lakes first (c=-2); countries grow around them
-  {const inner=i=>!edge(cells[i])&&hd(i,center)>=2&&hd(i,center)<=7&&cells[i].c===-1;
+  const MODES=ST.cont==='mixed'?(rnd()<0.5?['cont','cont','isl']:['cont','isl','isl']).sort(()=>rnd()-0.5):null;
+  const contOf=id=>{const k=C[id];if(ST.cont==='country')return id;if(ST.cont==='faction')return k.f>=0?k.f:3;if(MODES)return k.f>=0?(MODES[k.f]==='isl'?id:k.f):100+k.pair;return 0};
+  const gapOK=(j,id)=>{if(!ST.G)return true;const cj=contOf(id);for(const k of RING[j]){const o=cells[k].c;if(o>=0&&contOf(o)!==cj)return false}return true};
+  // pre-placed water: a big central sea (Inland Sea) and inland lakes; countries grow around them
+  {const inner=i=>!edge(cells[i])&&hd(i,center)>=2&&hd(i,center)<=(ST.bigSea?8:7)&&cells[i].c===-1;
    const near=i=>NB(i).some(j=>cells[j].c===-2);
    const put=i=>{cells[i].c=-2;cells[i].ft='lake'};
-   const nl=2+ri(2);
-   for(let k=0;k<nl;k++){const o=cells.map((c,i)=>i).filter(i=>inner(i)&&!near(i)&&hd(i,center)<=4);if(!o.length)return null;
+   if(ST.bigSea){const R=2+ri(2);cells.forEach((c,i)=>{const d=hd(i,center);if(d<R||(d===R&&rnd()<0.6))put(i)})}
+   const nl=rr(ST.lakes[0],ST.lakes[1]);
+   for(let k=0;k<nl;k++){const o=cells.map((c,i)=>i).filter(i=>inner(i)&&!near(i)&&(ST.bigSea?hd(i,center)>=5:hd(i,center)<=4));if(!o.length)return null;
      const blob=[o[ri(o.length)]];put(blob[0]);const tg=4+ri(4);
-     while(blob.length<tg){const fr=[...new Set(blob.flatMap(NB))].filter(j=>inner(j)&&hd(j,center)<=5);if(!fr.length)break;const j=fr[ri(fr.length)];put(j);blob.push(j)}}
+     while(blob.length<tg){const fr=[...new Set(blob.flatMap(NB))].filter(j=>inner(j)&&(ST.bigSea?hd(j,center)>=5:hd(j,center)<=5));if(!fr.length)break;const j=fr[ri(fr.length)];put(j);blob.push(j)}}
   }
-  const addCountry=(f,L,seedCell,target)=>{const id=C.length;C.push({f,L,target,cells:[seedCell]});cells[seedCell].c=id;return id};
+  const addCountry=(f,L,seedCell,target,pair)=>{const id=C.length;C.push({f,L,target,cells:[seedCell],pair});cells[seedCell].c=id;return id};
   // home countries (ids 0-2) at the back; small countries (ids 3-8) in front of them
-  const a0=rnd()*Math.PI*2, Rh=(6.0+rnd()*0.5)*S*SQ3, Rs=(3.5+rnd()*0.4)*S*SQ3, cx=cells[center].x, cy=cells[center].y;
+  const a0=rnd()*Math.PI*2, Rh=(ST.Rh+rnd()*0.5)*S*SQ3, Rs=(ST.Rs+rnd()*0.4)*S*SQ3, cx=cells[center].x, cy=cells[center].y;
   const at=(r,a)=>nearest(cx+r*Math.cos(a),cy+r*Math.sin(a));
-  const TOT=34+ri(7), split=[]; // every faction gets TOT hexes, split differently between its three countries
+  const TOT=34+ri(7), split=[];
   for(let f=0;f<NF;f++){const lo=Math.max(15,TOT-24),hi=Math.min(20,TOT-16),h=lo+ri(hi-lo+1),r=TOT-h,s1lo=Math.max(8,r-12),s1hi=Math.min(12,r-8),s1=s1lo+ri(s1hi-s1lo+1);split.push([h,s1,r-s1])}
   for(let f=0;f<NF;f++){const s=at(Rh,a0+f*2*Math.PI/3);if(s<0)return null;addCountry(f,1,s,split[f][0])}
-  for(let f=0;f<NF;f++)for(let k=0;k<2;k++){const s=at(Rs,a0+f*2*Math.PI/3+(k?1:-1)*0.42);if(s<0)return null;addCountry(f,0,s,split[f][1+k])}
-  // neutral countries seeded in the gaps between each pair of factions
+  for(let f=0;f<NF;f++)for(let k=0;k<2;k++){const s=at(Rs,a0+f*2*Math.PI/3+(k?1:-1)*(ST.cont==='country'||(MODES&&MODES[f]==='isl')?0.5:0.42));if(s<0)return null;addCountry(f,0,s,split[f][1+k])}
+  // neutral countries: in the gaps between each pair of factions (or, for Continents, one central continent)
   const neutralIds=[];
-  for(let a=0;a<NF;a++){const b=(a+1)%NF,A=cells[C[a].cells[0]],Bc=cells[C[b].cells[0]];
+  for(let a=0;a<NF;a++){
+    if(ST.neutral==='center'){const ang=a0+(a+0.5)*2*Math.PI/3;for(const r of [1.3,3.0]){const seed=at((r+rnd()*0.3)*S*SQ3,ang);if(seed<0)return null;neutralIds.push(addCountry(-1,0,seed,8+ri(5)))}continue}
+    const b=(a+1)%NF,A=cells[C[a].cells[0]],Bc=cells[C[b].cells[0]];
     const mx=(A.x+Bc.x)/2,my=(A.y+Bc.y)/2,dx=Bc.x-A.x,dy=Bc.y-A.y,L=Math.hypot(dx,dy)||1,px=-dy/L,py=dx/L;
-    for(let k=0;k<NEUTRALS_PER_PAIR;k++){const off=(k-(NEUTRALS_PER_PAIR-1)/2)*2.6*S*SQ3+(rnd()-0.5)*S;
-      const seed=nearest(mx+px*off,my+py*off);if(seed<0)return null;neutralIds.push(addCountry(-1,0,seed,8+ri(5)))}}
-  const frontier=id=>{const s=new Set();for(const i of C[id].cells)for(const j of NB(i))if(cells[j].c===-1&&!edge(cells[j]))s.add(j);return[...s]};
-  // faction countries grow first (homes lean outward, small countries lean toward their home); neutrals fill in after
+    for(let k=0;k<NEUTRALS_PER_PAIR;k++){const off=(k-(NEUTRALS_PER_PAIR-1)/2)*(ST.cont==='country'||MODES?3.4:2.6)*S*SQ3+(rnd()-0.5)*S;
+      const seed=nearest(mx+px*off,my+py*off);if(seed<0)return null;neutralIds.push(addCountry(-1,0,seed,8+ri(5),a))}}
+  // starting points of different landmasses must keep the sea gap
+  if(ST.G){for(let i=0;i<C.length;i++)for(let j=i+1;j<C.length;j++)if(contOf(i)!==contOf(j)&&hd(C[i].cells[0],C[j].cells[0])<=ST.G)return null}
+  const frontier=id=>{const s=new Set();for(const i of C[id].cells)for(const j of NB(i))if(cells[j].c===-1&&!edge(cells[j])&&gapOK(j,id))s.add(j);return[...s]};
   const grow=(ids,soft)=>{
     let act=ids.slice();
     while(act.length){
@@ -285,7 +309,6 @@ function tryWorld(seed,attempt){
   };
   if(!grow(C.map((k,i)=>i).filter(i=>C[i].f>=0)))return null;
   if(!grow(neutralIds,true))return null;
-  // pockets of sea enclosed by land become small lakes
   const pockets=()=>{const oc=new Set(),st=[];cells.forEach((c,i)=>{if(edge(c)){oc.add(i);st.push(i)}});
     while(st.length){const x=st.pop();for(const y of NB(x))if(cells[y].c===-1&&!oc.has(y)){oc.add(y);st.push(y)}}
     cells.forEach((c,i)=>{if(c.c===-1&&!oc.has(i)){c.c=-2;c.ft='lake'}})};
@@ -297,11 +320,15 @@ function tryWorld(seed,attempt){
      if(!cand.length)break;
      const blob=[cand[ri(cand.length)]],size=1+ri(4);
      while(blob.length<size){const fr=[...new Set(blob.flatMap(NB))].filter(j=>cells[j].c>=0&&!blob.includes(j));if(!fr.length)break;blob.push(fr[ri(fr.length)])}
+     const was=blob.map(i=>cells[i].c);
      for(const i of blob){const id=cells[i].c;C[id].cells=C[id].cells.filter(x=>x!==i);cells[i].c=-2;cells[i].ft='mtn'}
+     // undo a clump that would cut a country in two
+     if([...new Set(was)].some(id=>{const ks=C[id].cells;if(!ks.length)return true;const seen=new Set([ks[0]]),q=[ks[0]];while(q.length){const x=q.pop();for(const y of NB(x))if(cells[y].c===id&&!seen.has(y)){seen.add(y);q.push(y)}}return seen.size!==ks.length}))
+       blob.forEach((i,k)=>{cells[i].c=was[k];cells[i].ft=null;C[was[k]].cells.push(i)});
    }
    for(let id=0;id<C.length;id++){const k=C[id];if(k.f<0)continue;
      while(k.cells.length<k.target){
-       const fr=[...new Set(k.cells.flatMap(NB))].filter(j=>{const c=cells[j];if(c.c===-1)return!edge(c);return c.c>=0&&C[c.c].f<0&&C[c.c].cells.length>6});
+       const fr=[...new Set(k.cells.flatMap(NB))].filter(j=>{const c=cells[j];if(c.c===-1)return!edge(c)&&gapOK(j,id);return c.c>=0&&C[c.c].f<0&&C[c.c].cells.length>6&&contOf(c.c)===contOf(id)});
        if(!fr.length)return null;
        let b=-1,bs=-1e9;for(const j of fr){const sc=NB(j).filter(n=>cells[n].c===id).length+rnd()*0.5;if(sc>bs){bs=sc;b=j}}
        if(cells[b].c>=0){const o=C[cells[b].c];o.cells=o.cells.filter(x=>x!==b)}
@@ -313,26 +340,121 @@ function tryWorld(seed,attempt){
   }
   const land=cells.map((c,i)=>i).filter(i=>cells[i].c>=0);
   {const t=[0,1,2].map(f=>land.filter(i=>C[cells[i].c].f===f).length);if(t[0]!==t[1]||t[1]!==t[2])return null}
-  // all land connected; every neutral borders a faction; each pair of factions shares a neutral neighbour
-  {const seen=new Set([land[0]]),q=[land[0]];while(q.length){const x=q.pop();for(const y of NB(x))if(cells[y].c>=0&&!seen.has(y)){seen.add(y);q.push(y)}}if(seen.size!==land.length)return null}
-  const touches=id=>{const fs=new Set();for(const i of C[id].cells)for(const j of NB(i))if(cells[j].c>=0&&C[cells[j].c].f>=0)fs.add(C[cells[j].c].f);return fs};
-  for(const id of neutralIds)if(!touches(id).size)return null;
-  for(let a=0;a<NF;a++){const b=(a+1)%NF;if(!neutralIds.some(id=>{const t=touches(id);return t.has(a)&&t.has(b)}))return null}
   // tidy features: mountains with no land beside them become sea; lakes joined to the outer ocean become sea (bays)
   {cells.forEach((c,i)=>{if(c.ft==='mtn'&&!NB(i).some(j=>cells[j].c>=0)){c.ft=null;c.c=-1}});
    const q=cells.map((c,i)=>i).filter(i=>cells[i].c===-1),seen=new Set(q);
    while(q.length){const x=q.pop();for(const y of NB(x))if(!seen.has(y)&&cells[y].ft==='lake'){seen.add(y);cells[y].ft=null;cells[y].c=-1;q.push(y)}}}
-  if(!cells.some(c=>c.ft==='lake'))return null;
-  // a home country never borders an enemy faction; each faction's land is one connected territory
-  {let bad=false;cells.forEach((c,i)=>{if(c.c<0||!C[c.c].L||C[c.c].f<0)return;NB(i).forEach(j=>{if(cells[j].c>=0&&C[cells[j].c].f>=0&&C[cells[j].c].f!==C[c.c].f)bad=true})});if(bad)return null}
-  for(let f=0;f<NF;f++){const mine=land.filter(i=>C[cells[i].c].f===f);const seen=new Set([mine[0]]),q=[mine[0]];
-    while(q.length){const x=q.pop();for(const y of NB(x))if(cells[y].c>=0&&C[cells[y].c].f===f&&!seen.has(y)){seen.add(y);q.push(y)}}if(seen.size!==mine.length)return null}
+  if(!ST.bigSea&&ST.lakes[1]>=2&&!cells.some(c=>c.ft==='lake'))return null;
+  // sea lanes: short chains of water hexes linking separate landmasses (and, on the Inland Sea, opposite shores)
+  const lanes=[];
+  const water=i=>!edge(cells[i])&&cells[i].c<0&&cells[i].ft!=='mtn';
+  const fOf=i=>C[cells[i].c].f, isHome=i=>C[cells[i].c].L&&fOf(i)>=0;
+  const pairOK=(a,b)=>{const fa=fOf(a),fb=fOf(b);if(fa>=0&&fb>=0&&fa!==fb)return false; // never straight between two factions' land
+    if(isHome(a)&&fb>=0&&fb!==fa)return false;if(isHome(b)&&fa>=0&&fa!==fb)return false;return true};
+  const findLane=(fromSet,toTest,avoid)=>{ // shortest water path from a land hex in fromSet to a land hex passing toTest
+    const prev=new Map(),orig=new Map(),depth=new Map(),q=[];
+    fromSet.forEach(a=>NB(a).forEach(w=>{if(water(w)&&!depth.has(w)&&!(avoid&&avoid(w))){depth.set(w,1);orig.set(w,a);q.push(w)}}));
+    const found=[];let best=99;
+    for(let h=0;h<q.length;h++){const w=q[h],d=depth.get(w);if(d>best)break;
+      for(const b of NB(w))if(cells[b].c>=0&&toTest(b)&&pairOK(orig.get(w),b)){found.push({w,b,d});best=d}
+      if(d>=ST.maxLane)continue;
+      for(const y of NB(w))if(water(y)&&!depth.has(y)&&!(avoid&&avoid(y))){depth.set(y,d+1);orig.set(y,orig.get(w));prev.set(y,w);q.push(y)}}
+    if(!found.length)return null;
+    const f=found[ri(found.length)];const path=[f.w];let x=f.w;while(prev.has(x)){x=prev.get(x);path.unshift(x)}
+    return[orig.get(f.w),...path,f.b];
+  };
+  const addLane=p=>{lanes.push(p);p.slice(1,-1).forEach(i=>{cells[i].c=-3;cells[i].ft='lane'})};
+  const near2=p=>lanes.some(l=>l.slice(1,-1).some(u=>p.slice(1,-1).some(w=>hd(u,w)<=2)));
+  const adjLand=i=>NB(i).some(j=>cells[j].c>=0);
+  // cheapest water route; water next to land costs extra, so routes cross open sea instead of hugging coasts
+  const routeWater=(starts,goal,maxLen,pen)=>{
+    const dist=new Map(),len=new Map(),prev=new Map(),from=new Map(),open=[];
+    for(const s of starts){if(!water(s.w)||dist.has(s.w))continue;dist.set(s.w,1+(adjLand(s.w)?pen:0));len.set(s.w,1);from.set(s.w,s.from);open.push(s.w)}
+    while(open.length){
+      let bi=0;for(let k=1;k<open.length;k++)if(dist.get(open[k])<dist.get(open[bi]))bi=k;
+      const w=open.splice(bi,1)[0],g=goal(w,len.get(w),from.get(w));
+      if(g!=null){const path=[w];let x=w;while(prev.has(x)){x=prev.get(x);path.unshift(x)}return{path,end:g,start:from.get(w)}}
+      if(len.get(w)>=maxLen)continue;
+      for(const y of NB(w)){if(!water(y))continue;const nd=dist.get(w)+1+(adjLand(y)?pen:0);if(!dist.has(y)||nd<dist.get(y)){dist.set(y,nd);len.set(y,len.get(w)+1);prev.set(y,w);from.set(y,from.get(w));if(!open.includes(y))open.push(y)}}
+    }
+    return null;
+  };
+  const startsFrom=src=>{const out=[];src.forEach(a=>NB(a).forEach(w=>{if(water(w))out.push({w,from:a})}));return out};
+  const landGoal=(isT,minLen,check)=>(w,l,from)=>{if(l<minLen)return null;for(const b of NB(w))if(cells[b].c>=0&&isT(b)&&(!check||check(from,b)))return b;return null};
+  const laneVia=(src,via,isT,maxLen,pen,check)=>{
+    const a=routeWater(startsFrom(src),w=>w===via?true:null,maxLen,pen);if(!a)return null;
+    const b=routeWater([{w:via,from:a.start}],landGoal(isT,1,check),maxLen,pen);if(!b)return null;
+    return[a.start,...a.path,...b.path.slice(1),b.end];
+  };
+  const longLanes=new Set();
+  {const comp=new Array(cells.length).fill(-1);let n=0;
+   land.forEach(i=>{if(comp[i]>=0)return;const q=[i];comp[i]=n;while(q.length){const x=q.pop();for(const y of NB(x))if(cells[y].c>=0&&comp[y]<0){comp[y]=n;q.push(y)}}n++});
+   if(n>1){
+     // link every landmass (shortest crossings first), then add a few extra crossings
+     const cand=[];
+     for(let A=0;A<n;A++){const As=land.filter(i=>comp[i]===A);for(let B=A+1;B<n;B++){const p=findLane(As,b=>comp[b]===B);if(p)cand.push({A,B,p})}}
+     cand.sort((x,y)=>x.p.length-y.p.length);
+     const par=[...Array(n).keys()],find=x=>par[x]===x?x:(par[x]=find(par[x]));
+     for(const c of cand){const ra=find(c.A),rb=find(c.B);
+       if(ra!==rb){par[ra]=rb;addLane(c.p)}
+       else if(rnd()<(ST.extra||0)&&!near2(c.p))addLane(c.p)}
+   }
+   // a few longer lanes (2-7 hexes) between different landmasses, across open water
+   if(ST.varied&&n>1){const want=rr(ST.varied[0],ST.varied[1]);
+     for(let k=0;k<20&&want>0;k++){const a=land[ri(land.length)];if(!NB(a).some(water))continue;
+       const r=routeWater(startsFrom([a]),landGoal(b=>comp[b]!==comp[a]&&hd(a,b)>=4,2,pairOK),7,1.5);
+       if(!r)continue;const p=[r.start,...r.path,r.end];if(near2(p))continue;addLane(p);if(lanes.filter(l=>l.length>4).length>=want)break}}
+   // long-range lanes round the outside, between two factions' land
+   if(ST.long){const pairs=[[0,1],[1,2],[2,0]];let made=0;
+     for(const [fa,fb] of pairs){
+       const mid=[0,1,2].map(k=>a0+k*2*Math.PI/3),am=Math.atan2(Math.sin(mid[fa])+Math.sin(mid[fb]),Math.cos(mid[fa])+Math.cos(mid[fb]));
+       let via=-1,bd=1e9;const R=(ST.Rh+3.2)*S*SQ3,tx=cx+R*Math.cos(am),ty=cy+R*Math.sin(am);
+       cells.forEach((c,i)=>{if(!water(i)||adjLand(i))return;const d=(c.x-tx)**2+(c.y-ty)**2;if(d<bd){bd=d;via=i}});
+       if(via<0)return null;
+       const src=land.filter(i=>fOf(i)===fa),dst=b=>fOf(b)===fb;
+       if(ST.long==='direct'){const p=laneVia(src,via,dst,14,1.5,null);if(!p||p.length-2<5)return null;addLane(p);longLanes.add(p);made++}
+       else{ // a small neutral island at the halfway point, with lanes to it from both sides
+         const isl=[via];cells[via].c=-9;
+         for(let z=0;z<40&&isl.length<4+ri(3);z++){const fr=[...new Set(isl.flatMap(NB))].filter(j=>water(j)&&cells[j].c===-1&&!NB(j).some(x=>cells[x].c>=0||cells[x].c===-3));if(!fr.length)break;const j=fr[ri(fr.length)];cells[j].c=-9;isl.push(j)}
+         if(isl.length<3)return null;
+         const id=C.length;C.push({f:-1,L:0,target:isl.length,cells:isl.slice(),island:1});isl.forEach(i=>{cells[i].c=id;land.push(i)});neutralIds.push(id);
+         const r1=routeWater(startsFrom(src),landGoal(b=>cells[b].c===id,1,null),9,1.5),r2=routeWater(startsFrom(land.filter(i=>fOf(i)===fb)),landGoal(b=>cells[b].c===id,1,null),9,1.5);
+         if(!r1||!r2)return null;addLane([r1.start,...r1.path,r1.end]);addLane([r2.start,...r2.path,r2.end]);made++;
+       }
+     }
+     if(made<3)return null}
+   if(ST.bigSea){ // a hub in the middle of the sea, joined to 6 landing points evenly spread round the shore
+     if(!water(center))return null;
+     const shore=land.filter(i=>NB(i).some(j=>cells[j].ft==='lake'&&hd(j,center)<=4)&&!isHome(i));
+     const angOf=i=>Math.atan2(cells[i].y-cy,cells[i].x-cx),dAng=(x,y)=>Math.abs(Math.atan2(Math.sin(x-y),Math.cos(x-y)));
+     const spokes=[];
+     for(let k=0;k<6;k++){const want=a0+k*Math.PI/3;
+       const cand=shore.filter(i=>dAng(angOf(i),want)<0.5&&!spokes.some(s=>hd(s[0],i)<=2)).sort((x,y)=>dAng(angOf(x),want)-dAng(angOf(y),want));
+       let ok=false;
+       for(const l of cand.slice(0,4)){const r=routeWater(startsFrom([l]),w=>w===center?true:null,9,2.5);if(r){spokes.push([l,...r.path]);ok=true;break}}
+       if(!ok)return null;
+     }
+     spokes.forEach(p=>{lanes.push(p);longLanes.add(p);p.slice(1).forEach(i=>{cells[i].c=-3;cells[i].ft='lane'})});
+   }
+  }
+  // everything must be reachable over land and sea lanes
+  const pass=i=>cells[i].c>=0||cells[i].c===-3;
+  {const seen=new Set([land[0]]),q=[land[0]];while(q.length){const x=q.pop();for(const y of NB(x))if(pass(y)&&!seen.has(y)){seen.add(y);q.push(y)}}if(land.some(i=>!seen.has(i)))return null}
+  // which countries touch (over land, or across a sea lane)
+  const touch=C.map(()=>new Set());
+  land.forEach(i=>NB(i).forEach(j=>{if(cells[j].c>=0&&cells[j].c!==cells[i].c)touch[cells[i].c].add(cells[j].c)}));
+  lanes.forEach(p=>{if(longLanes.has(p))return;const a=cells[p[0]].c,b=cells[p[p.length-1]].c;if(a<0||b<0)return;if(a!==b){touch[a].add(b);touch[b].add(a)}});
+  if(ST.neutral!=='center')for(const id of neutralIds)if(![...touch[id]].some(o=>C[o].f>=0))return null;
+  if(ST.neutral==='center'){for(let a=0;a<NF;a++)if(!neutralIds.some(id=>[...touch[id]].some(o=>C[o].f===a)))return null}
+  else for(let a=0;a<NF;a++){const b=(a+1)%NF;if(!neutralIds.some(id=>[...touch[id]].some(o=>C[o].f===a)&&[...touch[id]].some(o=>C[o].f===b)))return null}
+  for(let f=0;f<NF;f++)if([...touch[f]].some(o=>C[o].f>=0&&C[o].f!==f))return null; // a home country never borders an enemy
+  // each faction's land is one territory (its own sea lanes may join it)
+  for(let f=0;f<NF;f++){const mine=land.filter(i=>C[cells[i].c].f===f);const ok=i=>(cells[i].c>=0&&C[cells[i].c].f===f)||cells[i].c===-3;
+    const seen=new Set([mine[0]]),q=[mine[0]];while(q.length){const x=q.pop();for(const y of NB(x))if(ok(y)&&!seen.has(y)){seen.add(y);q.push(y)}}if(mine.some(i=>!seen.has(i)))return null}
   // capitals: the most central hex of each country
   C.forEach((k,id)=>{let best=-1,bs=-1e9;for(const i of k.cells){let sc=rnd()*0.8;for(const j of k.cells)if(hd(i,j)<=2)sc++;if(sc>bs){bs=sc;best=i}}k.cap=best;cells[best].cap=id});
-  // no neutral land may start out encircled
   {const tmp={cells:cells.map(c=>({l:c.c>=0?1:0,nb:c.nb,cap:c.cap}))};const own=cells.map(c=>c.c>=0?C[c.c].f:-2);
    if(encircleOwners(tmp,own,new Set(),[-1]).length)return null}
-  // names and label spots
   const used=new Set(), capz=s=>s[0].toUpperCase()+s.slice(1);
   const cName=()=>{for(let z=0;z<80;z++){const n=capz(SYL[ri(SYL.length)]+(rnd()<0.5?SYL[ri(SYL.length)]:'')+CEND[ri(CEND.length)]);if(!used.has(n)){used.add(n);return n}}return 'Country '+used.size};
   const countries=C.map(k=>{
@@ -344,11 +466,176 @@ function tryWorld(seed,attempt){
   const hw=S*SQ3/2;
   return{
     cells:cells.map(c=>{const o={q:c.q,r:c.r,x:c.x,y:c.y,l:c.c>=0?1:0,c:c.c,nb:c.nb,cap:c.cap};if(c.ft)o.ft=c.ft;return o}),
-    countries, factions:[0,1,2].map(f=>({cap:C[f].cap,home:f})),
+    countries, factions:[0,1,2].map(f=>({cap:C[f].cap,home:f})), lanes,
     vb:[-hw-2,-S-2,+(maxx+2*hw+4).toFixed(2),maxy+2*S+4]
   };
 }
 
+// ================= three-way symmetrical maps =================
+// Built on a hexagon-shaped grid. Everything is placed one third at a time: whenever a hex is given to a
+// faction-0 country (or made a lake, mountain or sea lane), the same happens to the two hexes you get by
+// turning the map 120° and 240°, for the matching Blue and Green countries. So every faction gets an
+// identical position.
+const SYMSTYLES={
+  sym:     {name:'Symmetric',      R:12,G:0,contMode:null,   centerLake:0.6,lakes:[1,1],Rh:7.4,Rs:4.4,varied:[0,1],maxLane:3},
+  symisles:{name:'Symmetric Isles',R:13,G:1,contMode:'faction',centerLake:1,lakes:[0,0],Rh:8.4,Rs:5.6,varied:[1,1],maxLane:3,neutral:'center'}
+};
+function tryWorldSym(seed,attempt,style){
+  const ST=SYMSTYLES[style];
+  const rnd=mulberry32((seed+attempt*1000003)>>>0),ri=n=>Math.floor(rnd()*n),rr=(a,b)=>a+ri(b-a+1);
+  const R=ST.R,cells=[],idx=new Map(),K=(q,r)=>q*1000+r;
+  for(let q=-R;q<=R;q++)for(let r=Math.max(-R,-q-R);r<=Math.min(R,-q+R);r++){idx.set(K(q,r),cells.length);cells.push({q,r,x:S*SQ3*(q+r/2),y:S*1.5*r,w:rnd(),c:-1,cap:-1,nb:null,ft:null})}
+  cells.forEach(c=>c.nb=DIRS.map(([dq,dr])=>{const j=idx.get(K(c.q+dq,c.r+dr));return j===undefined?-1:j}));
+  const NB=i=>cells[i].nb.filter(j=>j>=0);
+  const hd=(a,b)=>{const A=cells[a],B=cells[b],dq=A.q-B.q,dr=A.r-B.r;return(Math.abs(dq)+Math.abs(dr)+Math.abs(dq+dr))/2};
+  const center=idx.get(K(0,0));
+  const ROT=cells.map(c=>idx.get(K(-c.q-c.r,c.q)));
+  const rotK=(i,k)=>{for(let z=0;z<k;z++)i=ROT[i];return i};
+  const orbit=i=>[i,ROT[i],ROT[ROT[i]]];
+  const edge=i=>hd(i,center)>=R;
+  // symmetric smooth noise
+  for(let k=0;k<3;k++){const nv=cells.map((c,i)=>{let s=c.w,n=1;for(const j of NB(i)){s+=cells[j].w;n++}return s/n});nv.forEach((v,i)=>cells[i].w=v)}
+  cells.forEach((c,i)=>{if(i===center)return;const o=orbit(i),m=(cells[o[0]].w+cells[o[1]].w+cells[o[2]].w)/3;o.forEach(j=>cells[j].w=m)});
+  const C=[];
+  // country ids: homes 0-2, small countries 3-8, neutrals 9-14; base country b's copy k belongs to faction k
+  const idOf=(b,k)=>b===0?k:b===1?3+2*k:b===2?4+2*k:b===3?9+2*k:10+2*k;
+  for(let k=0;k<3;k++){}
+  const contOf=id=>{if(!ST.contMode)return 0;const k=C[id];return k.f>=0?k.f:3};
+  const gapOK=(j,id)=>{if(!ST.G)return true;const cj=contOf(id);for(const k of NB(j)){const o=cells[k].c;if(o>=0&&contOf(o)!==cj)return false}return true};
+  const put=(i,t)=>orbit(i).forEach(j=>{cells[j].c=-2;cells[j].ft=t});
+  // water first: maybe a central lake, plus small lakes placed three at a time
+  cells[center].c=-2;cells[center].ft='lake';
+  if(rnd()<ST.centerLake)NB(center).forEach(j=>{cells[j].c=-2;cells[j].ft='lake'});
+  const nl=rr(ST.lakes[0],ST.lakes[1]);
+  for(let k=0;k<nl;k++){const o=cells.map((c,i)=>i).filter(i=>cells[i].c===-1&&hd(i,center)>=3&&hd(i,center)<=5);if(!o.length)return null;
+    const blob=[o[ri(o.length)]];put(blob[0],'lake');const tg=2+ri(2);
+    while(blob.length<tg){const fr=[...new Set(blob.flatMap(NB))].filter(j=>cells[j].c===-1&&hd(j,center)>=3&&hd(j,center)<=6&&orbit(j).every(x=>cells[x].c===-1));if(!fr.length)break;const j=fr[ri(fr.length)];put(j,'lake');blob.push(j)}}
+  // seeds for faction 0's countries and the neutrals between faction 0 and 1; copies follow by rotation
+  const th0=rnd()*Math.PI*2,u=(a,r)=>{let b=-1,bd=1e9;const x=r*S*SQ3*Math.cos(a),y=r*S*SQ3*Math.sin(a);cells.forEach((c,i)=>{if(c.c!==-1||edge(i)||i===center)return;const o=orbit(i);if(new Set(o).size<3||o.some(j=>cells[j].c!==-1))return;const d=(c.x-x)**2+(c.y-y)**2;if(d<bd){bd=d;b=i}});return b};
+  const TOT=34+ri(7),h=Math.max(15,TOT-24)+ri(Math.min(20,TOT-16)-Math.max(15,TOT-24)+1),rest=TOT-h,s1=Math.max(8,rest-12)+ri(Math.min(12,rest-8)-Math.max(8,rest-12)+1);
+  const base=[{f:0,L:1,t:h,a:th0,r:ST.Rh},{f:0,L:0,t:s1,a:th0-0.42,r:ST.Rs},{f:0,L:0,t:rest-s1,a:th0+0.42,r:ST.Rs}];
+  // the angle half way between faction 0 and faction 1
+  const hs0=u(th0,ST.Rh);if(hs0<0)return null;const a1=Math.atan2(cells[ROT[hs0]].y,cells[ROT[hs0]].x),am=Math.atan2(Math.sin(th0)+Math.sin(a1),Math.cos(th0)+Math.cos(a1));
+  if(ST.neutral==='center'){base.push({f:-1,L:0,t:8+ri(5),a:am,r:1.8},{f:-1,L:0,t:8+ri(5),a:am,r:3.6})}
+  else{base.push({f:-1,L:0,t:8+ri(5),a:am,r:ST.Rh*0.5-1.2},{f:-1,L:0,t:8+ri(5),a:am,r:ST.Rh*0.5+1.4})}
+  for(let k=0;k<15;k++)C.push(null);
+  for(let b=0;b<5;b++){const s=b===0?hs0:u(base[b].a,base[b].r);if(s<0)return null;
+    for(let k=0;k<3;k++){const id=idOf(b,k),c=rotK(s,k);C[id]={f:base[b].f>=0?k:-1,L:base[b].L,target:base[b].t,cells:[c],base:b,copy:k};cells[c].c=id}}
+  if(ST.G){for(let i=0;i<15;i++)for(let j=i+1;j<15;j++)if(contOf(i)!==contOf(j)&&hd(C[i].cells[0],C[j].cells[0])<=ST.G)return null}
+  // grow base countries; every new hex is copied to the other two thirds
+  const okCell=(j,b)=>{if(cells[j].c!==-1||edge(j)||j===center)return false;const o=orbit(j);if(new Set(o).size<3)return false;
+    for(let k=0;k<3;k++){const x=o[k];if(cells[x].c!==-1)return false;if(!gapOK(x,idOf(b,k)))return false}
+    if(ST.G){for(let k=0;k<3;k++)for(let m=k+1;m<3;m++)if(contOf(idOf(b,k))!==contOf(idOf(b,m))&&hd(o[k],o[m])<=ST.G+1)return false}
+    return true};
+  const grow=(bs,soft)=>{let act=bs.slice();
+    while(act.length){for(const b of act.slice()){const k0=C[idOf(b,0)];if(k0.cells.length>=k0.target){act=act.filter(x=>x!==b);continue}
+      const fr=[...new Set(k0.cells.flatMap(NB))].filter(j=>okCell(j,b));
+      if(!fr.length){if(soft&&k0.cells.length>=6){act=act.filter(x=>x!==b);continue}return false}
+      let best=-1,bs2=-1e9;for(const j of fr){let sc=NB(j).filter(n=>cells[n].c===idOf(b,0)).length*1.1+cells[j].w*2.5+rnd()*0.9;if(b===0)sc+=0.05*hd(j,center);if(b===1||b===2)sc-=0.35*hd(j,C[0].cells[0]);if(sc>bs2){bs2=sc;best=j}}
+      orbit(best).forEach((x,k)=>{cells[x].c=idOf(b,k);C[idOf(b,k)].cells.push(x)})}}
+    return true};
+  if(!grow([0,1,2]))return null;
+  if(!grow([3,4],true))return null;
+  const pockets=()=>{const oc=new Set(),st=[];cells.forEach((c,i)=>{if(edge(i)&&c.c===-1){oc.add(i);st.push(i)}});
+    while(st.length){const x=st.pop();for(const y of NB(x))if(cells[y].c===-1&&!oc.has(y)){oc.add(y);st.push(y)}}
+    cells.forEach((c,i)=>{if(c.c===-1&&!oc.has(i)){c.c=-2;c.ft='lake'}})};
+  pockets();
+  // mountains, three at a time; undo a clump that would split a country
+  const split=ids=>ids.some(id=>{const ks=C[id].cells;if(!ks.length)return true;const seen=new Set([ks[0]]),q=[ks[0]];while(q.length){const x=q.pop();for(const y of NB(x))if(cells[y].c===id&&!seen.has(y)){seen.add(y);q.push(y)}}return seen.size!==ks.length});
+  {const nm=1+ri(2);
+   for(let m=0;m<nm;m++){const cand=cells.map((c,i)=>i).filter(i=>cells[i].c>=0&&!edge(i)&&NB(i).every(j=>cells[j].c>=0)&&new Set(orbit(i)).size===3);if(!cand.length)break;
+     const blob=[cand[ri(cand.length)]],size=1+ri(3);
+     while(blob.length<size){const fr=[...new Set(blob.flatMap(NB))].filter(j=>cells[j].c>=0&&!blob.includes(j)&&!orbit(j).some(x=>blob.includes(x)));if(!fr.length)break;blob.push(fr[ri(fr.length)])}
+     const all=blob.flatMap(orbit),was=all.map(i=>cells[i].c);
+     all.forEach(i=>{const id=cells[i].c;C[id].cells=C[id].cells.filter(x=>x!==i);cells[i].c=-2;cells[i].ft='mtn'});
+     if(split([...new Set(was)]))all.forEach((i,k)=>{cells[i].c=was[k];cells[i].ft=null;C[was[k]].cells.push(i)});
+   }
+   // top faction countries back up, three at a time, into open water
+   for(const b of [0,1,2]){const k0=C[idOf(b,0)];
+     while(k0.cells.length<k0.target){const fr=[...new Set(k0.cells.flatMap(NB))].filter(j=>okCell(j,b));if(!fr.length)return null;
+       const j=fr.sort((x,y)=>NB(y).filter(n=>cells[n].c===idOf(b,0)).length-NB(x).filter(n=>cells[n].c===idOf(b,0)).length)[0];
+       orbit(j).forEach((x,k)=>{cells[x].c=idOf(b,k);C[idOf(b,k)].cells.push(x)})}}
+   pockets();
+   if(C.some(k=>k.f<0&&k.cells.length<6))return null;
+   if(split(C.map((k,i)=>i)))return null;
+  }
+  let land=cells.map((c,i)=>i).filter(i=>cells[i].c>=0);
+  cells.forEach((c,i)=>{if(c.ft==='mtn'&&!NB(i).some(j=>cells[j].c>=0)){c.ft=null;c.c=-1}});
+  {const q=cells.map((c,i)=>i).filter(i=>cells[i].c===-1),seen=new Set(q);
+   while(q.length){const x=q.pop();for(const y of NB(x))if(!seen.has(y)&&cells[y].ft==='lake'&&y!==center&&hd(y,center)>1){seen.add(y);cells[y].ft=null;cells[y].c=-1;q.push(y)}}}
+  // sea lanes, always added three at a time
+  const lanes=[],longLanes=new Set();
+  const water=i=>!edge(i)&&cells[i].c<0&&cells[i].ft!=='mtn'&&i!==center;
+  const fOf=i=>C[cells[i].c].f,isHome=i=>C[cells[i].c].L&&fOf(i)>=0;
+  const pairOK=(a,b)=>{const fa=fOf(a),fb=fOf(b);if(fa>=0&&fb>=0&&fa!==fb)return false;if(isHome(a)&&fb>=0&&fb!==fa)return false;if(isHome(b)&&fa>=0&&fa!==fb)return false;return true};
+  const adjLand=i=>NB(i).some(j=>cells[j].c>=0);
+  const routeWater=(starts,goal,maxLen,pen)=>{const dist=new Map(),len=new Map(),prev=new Map(),from=new Map(),open=[];
+    for(const s of starts){if(!water(s.w)||dist.has(s.w))continue;dist.set(s.w,1+(adjLand(s.w)?pen:0));len.set(s.w,1);from.set(s.w,s.from);open.push(s.w)}
+    while(open.length){let bi=0;for(let k=1;k<open.length;k++)if(dist.get(open[k])<dist.get(open[bi]))bi=k;
+      const w=open.splice(bi,1)[0],g=goal(w,len.get(w),from.get(w));
+      if(g!=null){const path=[w];let x=w;while(prev.has(x)){x=prev.get(x);path.unshift(x)}return{path,end:g,start:from.get(w)}}
+      if(len.get(w)>=maxLen)continue;
+      for(const y of NB(w)){if(!water(y))continue;const nd=dist.get(w)+1+(adjLand(y)?pen:0);if(!dist.has(y)||nd<dist.get(y)){dist.set(y,nd);len.set(y,len.get(w)+1);prev.set(y,w);from.set(y,from.get(w));if(!open.includes(y))open.push(y)}}}
+    return null};
+  const startsFrom=src=>{const out=[];src.forEach(a=>NB(a).forEach(w=>{if(water(w))out.push({w,from:a})}));return out};
+  const landGoal=(isT,minLen,check)=>(w,l,from)=>{if(l<minLen)return null;for(const b of NB(w))if(cells[b].c>=0&&isT(b)&&(!check||check(from,b)))return b;return null};
+  const addLane3=(p,long)=>{for(let k=0;k<3;k++){const q=p.map(i=>rotK(i,k));lanes.push(q);if(long)longLanes.add(q);q.slice(1,-1).forEach(i=>{cells[i].c=-3;cells[i].ft='lane'})}};
+  const pass=i=>cells[i].c>=0||cells[i].c===-3;
+  const groups=()=>{const g=new Array(cells.length).fill(-1);let n=0;land.forEach(i=>{if(g[i]>=0)return;const q=[i];g[i]=n;while(q.length){const x=q.pop();for(const y of NB(x))if(pass(y)&&g[y]<0){g[y]=n;q.push(y)}}n++});return{g,n}};
+  for(let it=0;it<8;it++){const {g,n}=groups();if(n<=1)break;
+    let best=null;for(let A=0;A<n;A++){const As=land.filter(i=>g[i]===A);const r=routeWater(startsFrom(As),landGoal(b=>g[b]!==A,1,pairOK),ST.maxLane,0.5);if(r&&(!best||r.path.length<best.path.length))best=r}
+    if(!best)return null;addLane3([best.start,...best.path,best.end],false)}
+  {const want=rr(ST.varied[0],ST.varied[1]);let made=0;
+   for(let k=0;k<20&&made<want;k++){const a=land[ri(land.length)];if(!NB(a).some(water))continue;const {g}=groups();
+     const r=routeWater(startsFrom([a]),landGoal(b=>cells[b].c!==cells[a].c&&hd(a,b)>=5,2,pairOK),6,1.5);if(r){addLane3([r.start,...r.path,r.end],false);made++}}}
+  if(groups().n>1)return null;
+  // checks: neutrals reach factions; homes never border an enemy; faction land in one piece
+  const touch=C.map(()=>new Set());
+  land.forEach(i=>NB(i).forEach(j=>{if(cells[j].c>=0&&cells[j].c!==cells[i].c)touch[cells[i].c].add(cells[j].c)}));
+  lanes.forEach(p=>{if(longLanes.has(p))return;const a=cells[p[0]].c,b=cells[p[p.length-1]].c;if(a>=0&&b>=0&&a!==b){touch[a].add(b);touch[b].add(a)}});
+  for(let f=0;f<3;f++)if([...touch[f]].some(o=>C[o].f>=0&&C[o].f!==f))return null;
+  if(!C.some((k,i)=>k.f<0&&[...touch[i]].some(o=>C[o].f>=0)))return null;
+  for(let f=0;f<3;f++){const mine=land.filter(i=>C[cells[i].c].f===f),ok=i=>(cells[i].c>=0&&C[cells[i].c].f===f)||cells[i].c===-3;
+    const seen=new Set([mine[0]]),q=[mine[0]];while(q.length){const x=q.pop();for(const y of NB(x))if(ok(y)&&!seen.has(y)){seen.add(y);q.push(y)}}if(mine.some(i=>!seen.has(i)))return null}
+  // capitals chosen for faction 0's countries and copied
+  for(let b=0;b<5;b++){const k0=C[idOf(b,0)];let best=-1,bs=-1e9;for(const i of k0.cells){let sc=rnd()*0.8;for(const j of k0.cells)if(hd(i,j)<=2)sc++;if(sc>bs){bs=sc;best=i}}
+    for(let k=0;k<3;k++){const c=rotK(best,k);C[idOf(b,k)].cap=c;cells[c].cap=idOf(b,k)}}
+  {const tmp={cells:cells.map(c=>({l:c.c>=0?1:0,nb:c.nb,cap:c.cap}))};const own=cells.map(c=>c.c>=0?C[c.c].f:-2);if(encircleOwners(tmp,own,new Set(),[-1]).length)return null}
+  const used=new Set(),capz=s=>s[0].toUpperCase()+s.slice(1);
+  const cName=()=>{for(let z=0;z<80;z++){const n=capz(SYL[ri(SYL.length)]+(rnd()<0.5?SYL[ri(SYL.length)]:'')+CEND[ri(CEND.length)]);if(!used.has(n)){used.add(n);return n}}return 'Country '+used.size};
+  // shift coordinates so everything is positive
+  let minx=1e9,miny=1e9;cells.forEach(c=>{minx=Math.min(minx,c.x);miny=Math.min(miny,c.y)});
+  cells.forEach(c=>{c.x=+(c.x-minx+S).toFixed(2);c.y=+(c.y-miny+S).toFixed(2)});
+  const countries=C.map(k=>{let mx=0,my=0;k.cells.forEach(i=>{mx+=cells[i].x;my+=cells[i].y});mx/=k.cells.length;my/=k.cells.length;
+    let b=k.cells[0],bd=1e9;k.cells.forEach(i=>{if(i===k.cap)return;const d=(cells[i].x-mx)**2+(cells[i].y-my)**2;if(d<bd){bd=d;b=i}});
+    return{name:cName(),f:k.f,L:k.L,cap:k.cap,n:k.cells.length,lx:cells[b].x,ly:cells[b].y}});
+  let maxx=0,maxy=0;cells.forEach(c=>{maxx=Math.max(maxx,c.x);maxy=Math.max(maxy,c.y)});
+  const hw=S*SQ3/2;
+  return{cells:cells.map(c=>{const o={q:c.q,r:c.r,x:c.x,y:c.y,l:c.c>=0?1:0,c:c.c,nb:c.nb,cap:c.cap};if(c.ft)o.ft=c.ft;return o}),
+    countries,factions:[0,1,2].map(f=>({cap:C[f].cap,home:f})),lanes,sym:true,
+    vb:[-hw-2,-S-2,+(maxx+2*hw+4).toFixed(2),maxy+2*S+4]};
+}
+
+// ================= named maps =================
+// The three named maps were picked from 179 candidates, each played 200 times by the computer player.
+// A map is rebuilt exactly from its type, long-route setting and seed.
+const NAMED_MAPS=[
+  {key:'symmetric',  name:'Symmetric',  style:'sym',        long:null,seed:18444,note:'Three identical positions. Fair, but games are often decided on land, not eliminations.'},
+  {key:'archipelago',name:'Archipelago',style:'archipelago',long:null,seed:11111,note:'Every country is an island, linked by sea lanes.'},
+  {key:'continental',name:'Continental',style:'classic',    long:null,seed:7296, note:'One big landmass with lakes and mountains.'}
+];
+const RANDOM_STYLES=[['classic',[null]],['continents',[null,'direct','island']],['archipelago',[null,'direct','island']],['mixed',[null,'island']],['inlandsea',[null,'island']],['sym',[null]],['symisles',[null]]];
+function genStyled(seed,style,long,any){
+  const st=STYLES[style],keep=st?st.long:undefined;if(st)st.long=long;
+  try{return any?genWorldAny(seed,style):genWorld(seed,style)}finally{if(st)st.long=keep}
+}
+function namedMap(key){const n=NAMED_MAPS.find(m=>m.key===key);if(!n)return null;const M=genStyled(n.seed,n.style,n.long,false);if(M){M.name=n.name;M.key=n.key}return M}
+function randomMap(seed){
+  const r=mulberry32(seed>>>0),[style,longs]=RANDOM_STYLES[Math.floor(r()*RANDOM_STYLES.length)],long=longs[Math.floor(r()*longs.length)];
+  const M=genStyled(seed,style,long,true);
+  if(M){const nm=(STYLES[style]||SYMSTYLES[style]).name;M.name='Random: '+nm+(long==='direct'?' + long lanes':long==='island'?' + islands':'');M.key='random'}
+  return M;
+}
 // ================= game state =================
 // g.st: armies on the map, one entry per faction per hex: {f,c,n}
 // g.links: border battles between armies that crossed paths: [hexA, factionA, hexB, factionB]
@@ -364,7 +651,7 @@ function newGame(map,opts){
 const landCount=(g,f)=>g.owner.reduce((s,o,i)=>s+(o===f&&g.map.cells[i].l?1:0),0);
 const armyCount=(g,f)=>g.st.reduce((s,a)=>s+(a.f===f?a.n:0),0);
 function glog(g,f,m){g.log.push({t:g.turn,f,m});if(g.log.length>300)g.log.splice(0,g.log.length-300)}
-const cname=(g,h)=>g.map.countries[g.map.cells[h].c].name;
+const cname=(g,h)=>{const c=g.map.cells[h];return c.c>=0?g.map.countries[c.c].name:'a sea lane'};
 function armiesAt(g,h,f){let n=0;for(const a of g.st)if(a.c===h&&a.f===f)n+=a.n;return n}
 function factionsAt(g,h){const s=new Set();for(const a of g.st)if(a.c===h&&a.n>0)s.add(a.f);return s}
 function normalize(st){const m=new Map();for(const a of st){if(a.n<=0)continue;const k=a.f+':'+a.c;if(m.has(k))m.get(k).n+=a.n;else m.set(k,{f:a.f,c:a.c,n:a.n})}return[...m.values()]}
@@ -388,12 +675,12 @@ function incomeOf(g,f){
 function reachFor(g,f,from,retreat){
   const M=g.map,dist=new Map([[from,0]]),prev=new Map(),q=[from];
   const enemyIn=h=>g.st.some(a=>a.c===h&&a.f!==f&&a.n>0);
-  if(retreat){for(const j of nbs(M,from))if(isLand(M,j)&&g.owner[j]===f&&!enemyIn(j)){dist.set(j,1);prev.set(j,from)}return{dist,prev}}
+  if(retreat){for(const j of nbs(M,from))if(((isLand(M,j)&&g.owner[j]===f)||isLane(M,j))&&!enemyIn(j)){dist.set(j,1);prev.set(j,from)}return{dist,prev}}
   while(q.length){
     const x=q.shift(),d=dist.get(x);
     if(d>=MOVE)continue;
-    if(x!==from&&(g.owner[x]!==f||enemyIn(x)))continue; // the move ends here
-    for(const y of nbs(M,x)){if(!isLand(M,y)||dist.has(y))continue;dist.set(y,d+1);prev.set(y,x);q.push(y)}
+    if(x!==from&&((isLand(M,x)&&g.owner[x]!==f)||enemyIn(x)))continue; // the move ends here (sea lanes don't stop it)
+    for(const y of nbs(M,x)){if(!passable(M,y)||dist.has(y))continue;dist.set(y,d+1);prev.set(y,x);q.push(y)}
   }
   return{dist,prev};
 }
@@ -445,14 +732,14 @@ function resolveTurn(g){
     const occ=new Map();
     g.st.forEach(a=>{if(a.n>0){if(!occ.has(a.c))occ.set(a.c,new Set());occ.get(a.c).add(a.f)}});
     groups.forEach(G=>{if(G.n>0){if(!occ.has(G.c))occ.set(G.c,new Set());occ.get(G.c).add(G.f)}});
-    occ.forEach((fs,h)=>{if(fs.size===1)setOwner(h,[...fs][0],fl)});
+    occ.forEach((fs,h)=>{if(fs.size===1&&M.cells[h].l)setOwner(h,[...fs][0],fl)}); // sea lanes are never owned
   };
   const checkElim=fr=>{for(let f=0;f<NF;f++)if(alive(f)&&g.owner[M.factions[f].cap]!==f)eliminate(g,f,fr,groups,tx)};
   snap('start');
   // 1. retreats
   let any=false;const rmv=[];
   for(const G of groups){if(!G.r)continue;G.stop=true;const t=G.path[0];
-    if(!M.cells[G.c].nb.includes(t)||!isLand(M,t)||so[t]!==G.f||enemyNow(t,G.f))continue;
+    if(!M.cells[G.c].nb.includes(t)||!passable(M,t)||(isLand(M,t)&&so[t]!==G.f)||enemyNow(t,G.f))continue;
     rmv.push([G.c,t,G.f,G.n]);G.c=t;any=true}
   if(any){const fr={fl:[]};controlUpdate(fr.fl);snap('retreat',{mv:rmv,fl:fr.fl});
     rmv.forEach(([a,b,f,n])=>tx.push(`↩ ${g.players[f].name}: ${n} retreat${n>1?'':'s'} from ${cname(g,a)}`))}
@@ -461,7 +748,7 @@ function resolveTurn(g){
     const movers=groups.filter(G=>!G.stop&&!G.r&&G.path.length>s&&G.n>0);
     if(!movers.length)break;
     const mv=[],cross=[];
-    movers.forEach(G=>{G.to=G.path[s];if(!M.cells[G.c].nb.includes(G.to)||!isLand(M,G.to)){G.stop=true;G.to=null}});
+    movers.forEach(G=>{G.to=G.path[s];if(!M.cells[G.c].nb.includes(G.to)||!passable(M,G.to)){G.stop=true;G.to=null}});
     const live=movers.filter(G=>G.to!=null);
     // armies of different factions crossing paths collide on the border: both stop and fight there
     const blocked=new Set();
@@ -471,7 +758,7 @@ function resolveTurn(g){
     const going=live.filter(G=>!blocked.has(G));
     going.forEach(G=>{mv.push([G.c,G.to,G.f,G.n]);G.c=G.to;G.to=null});
     // an army stops when it enters a hex it doesn't own or a hex with enemy armies
-    going.forEach(G=>{if(g.owner[G.c]!==G.f||enemyNow(G.c,G.f))G.stop=true});
+    going.forEach(G=>{if((isLand(M,G.c)&&g.owner[G.c]!==G.f)||enemyNow(G.c,G.f))G.stop=true});
     const fl=[];controlUpdate(fl);
     const fr={fl};checkElim(fr);
     snap('move',{mv,fl:fr.fl,cross,el:fr.el});
@@ -601,7 +888,7 @@ function encircleOwners(M,owner,occupied,sides){
 // ================= computer players =================
 function distFrom(g,targets){ // land distance from a set of hexes
   const M=g.map,d=new Map(),q=[];targets.forEach(h=>{d.set(h,0);q.push(h)});
-  while(q.length){const x=q.shift();for(const y of nbs(M,x))if(isLand(M,y)&&!d.has(y)){d.set(y,d.get(x)+1);q.push(y)}}
+  while(q.length){const x=q.shift();for(const y of nbs(M,x))if(passable(M,y)&&!d.has(y)){d.set(y,d.get(x)+1);q.push(y)}}
   return d;
 }
 function aiPlace(g,f){
@@ -646,6 +933,7 @@ function aiOrders(g,f){
     const rr=reachFor(g,f,a.c,false),cands=[];
     rr.dist.forEach((d,h)=>{
       if(h===a.c||g.owner[h]===f&&!enemyAt(h))return;
+      if(isLane(M,h)&&!enemyAt(h))return;
       if(claimed.has(h)&&!enemyAt(h))return;
       const e=enemyAt(h),isCap=M.cells[h].cap>=0,isFcap=M.factions.some((F,k)=>F.cap===h&&k!==f&&g.players[k].alive);
       let need,val;
@@ -674,22 +962,127 @@ function aiOrders(g,f){
   }
   return orders;
 }
+// ================= computer player v2 =================
+// Plans the whole turn at once: knows where enemy armies could strike next turn (a threat map),
+// keeps enough armies on its capitals and front line, pools armies from several stacks for attacks it
+// expects to win, grabs land with single armies where it's safe, crosses sea lanes, and marches spare
+// armies toward the most useful front over several turns.
+function aiThreat(g,f){ // enemy armies that could reach each hex next turn
+  const M=g.map,th=new Float64Array(M.cells.length);
+  for(const a of g.st){if(a.f===f)continue;
+    const d=new Map([[a.c,0]]),q=[a.c];
+    while(q.length){const x=q.shift();const dx=d.get(x);th[x]+=a.n*[1,1,0.75,0.5,0.3][Math.min(dx,4)];if(dx>=MOVE+1)continue;for(const y of nbs(M,x))if(passable(M,y)&&!d.has(y)){d.set(y,dx+1);q.push(y)}}}
+  return th;
+}
+function aiPlace2(g,f){
+  const M=g.map,home=homeHexes(g,f),cap=M.factions[f].cap;
+  const front=distFrom(g,M.cells.map((c,i)=>i).filter(i=>M.cells[i].l&&g.owner[i]!==f));
+  const edge=home.filter(h=>h!==cap).sort((a,b)=>(front.get(a)||99)-(front.get(b)||99)+Math.random()*1.6-0.8);
+  // a solid guard at the capital, the rest in two groups on the side nearest the action
+  const out=[{c:cap,n:4}];if(edge[0]!=null)out.push({c:edge[0],n:3});if(edge[3]!=null)out.push({c:edge[3],n:3});else if(edge[1]!=null)out.push({c:edge[1],n:3});
+  return cleanPlace(g,f,out);
+}
+function aiRecruits2(g,f){
+  const M=g.map;let k=Math.floor(g.money[f]/ARMY_COST);if(k<=0)return[];
+  const th=aiThreat(g,f),out=[],add=(c,n)=>{n=Math.min(n,k);if(n<=0)return;const e=out.find(x=>x.c===c);if(e)e.n+=n;else out.push({c,n});k-=n};
+  const caps=M.countries.map(c=>c.cap).filter(c=>g.owner[c]===f);if(!caps.length)return[];
+  const fcap=M.factions[f].cap;
+  // first make every capital safe, the faction capital most of all
+  caps.sort((a,b)=>(b===fcap)-(a===fcap)||th[b]-th[a]);
+  for(const c of caps){const need=Math.ceil(th[c]*(c===fcap?1.1:0.5))-armiesAt(g,c,f);if(need>0)add(c,need)}
+  // then build up at the capitals closest to enemies (or to unclaimed land)
+  const ed=distFrom(g,g.st.filter(a=>a.f!==f).map(a=>a.c)),fr=distFrom(g,M.cells.map((c,i)=>i).filter(i=>M.cells[i].l&&g.owner[i]!==f));
+  const spots=caps.slice().sort((a,b)=>((ed.get(a)??99)+(fr.get(a)??99)*0.5)-((ed.get(b)??99)+(fr.get(b)??99)*0.5)+Math.random()*2-1).slice(0,2);
+  let i=0;while(k>0){add(spots[i%spots.length],1);i++}
+  return out;
+}
+function aiOrders2(g,f){
+  const M=g.map,orders=[],inB=battleSet(g),fcap=M.factions[f].cap,th=aiThreat(g,f);
+  const enemyAt=h=>{let n=0;for(const a of g.st)if(a.c===h&&a.f!==f)n+=a.n;return n};
+  const jit=()=>0.85+0.3*Math.random(),shuf=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+  const mine=shuf(g.st.filter(a=>a.f===f));
+  const avail=new Map(mine.map(a=>[a.c,a.n]));
+  const capsOwned=new Set(M.countries.map(c=>c.cap).filter(c=>g.owner[c]===f));
+  const isFcapOf=h=>M.factions.findIndex((F,k)=>F.cap===h&&k!==f&&g.players[k].alive);
+  // 1. armies already in battle: retreat if clearly losing (never from the faction capital), else hold
+  const battleNeed=new Map();
+  for(const a of mine){if(!inB.has(f+':'+a.c))continue;
+    let foe=enemyAt(a.c);g.links.forEach(([x,fx,y,fy])=>{if(x===a.c&&fx===f)foe+=armiesAt(g,y,fy);if(y===a.c&&fy===f)foe+=armiesAt(g,x,fx)});
+    avail.set(a.c,0);
+    if(a.c!==fcap&&a.n*1.6<foe&&!capsOwned.has(a.c)){const rr=reachFor(g,f,a.c,true);let best=null;rr.dist.forEach((d,h)=>{const sc=-th[h]+Math.random()*0.2;if(!best||sc>best.sc)best={h,sc}});
+      if(best){orders.push({from:a.c,n:a.n,path:[best.h],r:true});continue}}
+    const want=Math.ceil(foe*1.3)-a.n;if(want>0)battleNeed.set(a.c,want);
+  }
+  // 2. garrisons: keep enough on threatened capitals (and always 2 on the faction capital)
+  for(const c of capsOwned){const keep=Math.max(c===fcap?3:0,Math.ceil(th[c]*(c===fcap?1.1:0.5)));const have=avail.get(c)||0;
+    if(have>0)avail.set(c,Math.max(0,have-keep));}
+  // 3. everyone's reach this turn
+  const reach=new Map();for(const a of mine)if((avail.get(a.c)||0)>0)reach.set(a.c,reachFor(g,f,a.c,false));
+  // 4. requests: help battles, defend threatened capitals, attack, grab land
+  const req=[];
+  battleNeed.forEach((need,h)=>req.push({h,need,val:9+need*0.3,kind:'help'}));
+  for(const c of capsOwned){const short=Math.ceil(th[c]*(c===fcap?1.1:0.5))-armiesAt(g,c,f);if(short>0&&th[c]>0)req.push({h:c,need:short,val:(c===fcap?30:6),kind:'guard'})}
+  const seenT=new Set();
+  reach.forEach(rr=>rr.dist.forEach((d,h)=>{
+    if(seenT.has(h))return;seenT.add(h);
+    const e=enemyAt(h),land=isLand(M,h);
+    if(!land&&!e)return;               // empty sea lanes aren't worth anything by themselves
+    if(land&&g.owner[h]===f&&!e)return;
+    const cap=land&&M.cells[h].cap>=0,fc=isFcapOf(h)>=0;
+    if(!e){let val=2+(g.owner[h]>=0?1.5:0)+(cap?6:0)+(fc?80:0)-Math.min(1.5,th[h]*0.12);
+      req.push({h,need:th[h]>3&&!cap?2:1,val,kind:'grab'})}
+    else{const defended=land&&g.owner[h]>=0&&g.owner[h]!==f&&g.st.some(a=>a.c===h&&a.f===g.owner[h]);
+      const need=Math.ceil(e*(defended?1.3:1.1))+1;
+      req.push({h,need,val:6+e*0.5+(cap?6:0)+(fc?80:0)+(th[fcap]>0&&hexDist(M,h,fcap)<=MOVE+1?8:0),kind:'attack'})}
+  }));
+  // 5. fill requests, best value per army first; attacks only if enough armies can get there this turn
+  req.forEach(r=>r.val*=jit());shuf(req);req.sort((x,y)=>y.val/y.need-x.val/x.need);
+  const claimed=new Set();
+  for(const r of req){
+    if(claimed.has(r.h)&&r.kind==='grab')continue;
+    const sources=shuf([...reach.entries()].filter(([c,rr])=>rr.dist.has(r.h)&&c!==r.h&&(avail.get(c)||0)>0)).sort((x,y)=>x[1].dist.get(r.h)-y[1].dist.get(r.h));
+    const supply=sources.reduce((s,[c])=>s+avail.get(c),0);
+    if(r.kind==='attack'&&supply<r.need)continue;
+    let need=r.kind==='attack'?Math.max(r.need,Math.min(supply,Math.ceil(r.need*1.3))):r.need;
+    for(const [c,rr] of sources){if(need<=0)break;const n=Math.min(avail.get(c),need);
+      orders.push({from:c,n,path:pathTo(rr,c,r.h)});avail.set(c,avail.get(c)-n);need-=n}
+    claimed.add(r.h);
+  }
+  // 6. big idle stacks attack the nearest enemy army they clearly outnumber, even several turns away
+  for(const a of mine){const n=avail.get(a.c)||0;if(n<8)continue;
+    const rr=reach.get(a.c)||reachFor(g,f,a.c,false);let best=null;
+    rr.dist.forEach((d,h)=>{const e=enemyAt(h);if(!e||n<e*1.25+1)return;const sc=e+(isLand(M,h)&&M.cells[h].cap>=0?5:0)-d+Math.random()*2;if(!best||sc>best.sc)best={h,sc}});
+    if(best){orders.push({from:a.c,n,path:pathTo(rr,a.c,best.h)});avail.set(a.c,0)}}
+  // 7. spare armies march toward the best front, several turns ahead if need be (sea lanes included)
+  const goals=M.cells.map((c,i)=>i).filter(i=>{if(!isLand(M,i))return false;const o=g.owner[i];return o!==f});
+  const gd=distFrom(g,goals),ed=distFrom(g,g.st.filter(a=>a.f!==f).map(a=>a.c));
+  for(const a of mine){const n=avail.get(a.c)||0;if(n<=0)continue;
+    const rr=reach.get(a.c)||reachFor(g,f,a.c,false);
+    const here=(gd.get(a.c)??99)+(ed.get(a.c)??99)*0.3;
+    let best=null;rr.dist.forEach((d,h)=>{if(h===a.c||enemyAt(h))return;if(isLand(M,h)&&g.owner[h]!==f)return;
+      const sc=(gd.get(h)??99)+(ed.get(h)??99)*0.3+(isLane(M,h)?0.6:0)-Math.min(2,(armiesAt(g,h,f))*0.05)+Math.random()*0.8;
+      if(!best||sc<best.sc)best={h,sc}});
+    if(best&&best.sc<here-0.5)orders.push({from:a.c,n,path:pathTo(rr,a.c,best.h)});
+  }
+  return orders;
+}
+
 // Fill in computer moves and play out the turn once every human has submitted.
 // If no humans are left alive, the computers play the rest of the game out.
 function advance(g){
   for(let k=0;k<=MAX_TURNS+2&&g.phase!=='over';k++){
     if(!g.players.every((p,f)=>!p.alive||p.ai||g.submitted[f]))return;
     if(g.phase==='place'){
-      g.players.forEach((p,f)=>{if(p.ai&&!g.submitted[f]){g.place[f]=aiPlace(g,f);g.submitted[f]=true}});
+      g.players.forEach((p,f)=>{if(p.ai&&!g.submitted[f]){g.place[f]=p.bot==='v1'?aiPlace(g,f):aiPlace2(g,f);g.submitted[f]=true}});
       startPlay(g);
     }else{
-      g.players.forEach((p,f)=>{if(p.alive&&p.ai&&!g.submitted[f]){g.orders[f]=aiOrders(g,f);g.recruits[f]=aiRecruits(g,f);g.submitted[f]=true}});
+      g.players.forEach((p,f)=>{if(p.alive&&p.ai&&!g.submitted[f]){const v1=p.bot==='v1';g.orders[f]=v1?aiOrders(g,f):aiOrders2(g,f);g.recruits[f]=v1?aiRecruits(g,f):aiRecruits2(g,f);g.submitted[f]=true}});
       resolveTurn(g);
     }
     if(g.players.some(p=>p.alive&&!p.ai))return;
   }
 }
-if(typeof module!=='undefined')module.exports={genWorld,genWorldAny,newGame,startPlay,resolveTurn,advance,aiOrders,aiPlace,aiRecruits,reachFor,pathTo,battleSet,incomeOf,landCount,armyCount,armiesAt,normalize,encircleOwners,cleanPlace,homeHexes,setRoll,hexDist,START_ARMIES,ARMY_COST,MOVE,ROUNDS,INCOME,NF};
+if(typeof module!=='undefined')module.exports={NAMED_MAPS,namedMap,randomMap,genStyled,SYMSTYLES,aiOrders2,aiRecruits2,aiPlace2,isLane,passable,STYLES,genWorld,genWorldAny,newGame,startPlay,resolveTurn,advance,aiOrders,aiPlace,aiRecruits,reachFor,pathTo,battleSet,incomeOf,landCount,armyCount,armiesAt,normalize,encircleOwners,cleanPlace,homeHexes,setRoll,hexDist,START_ARMIES,ARMY_COST,MOVE,ROUNDS,INCOME,NF};
 
 
 // ================= drawing =================
@@ -710,7 +1103,7 @@ function buildWorldSVG(svg,map,preview){
   const [vx,vy,vw,vh]=map.vb;
   el('rect',{x:vx-800,y:vy-800,width:vw+1600,height:vh+1600,fill:'#10283d'},svg);
   const gC=el('g',{},svg);
-  cells.forEach((c,i)=>{R.poly[i]=el('polygon',{points:hexPts(c),'data-c':i,class:c.l?'land':c.ft==='lake'?'lake':c.ft==='mtn'?'mtn':'sea'},gC)});
+  cells.forEach((c,i)=>{R.poly[i]=el('polygon',{points:hexPts(c),'data-c':i,class:c.l?'land':c.ft==='lake'?'lake':c.ft==='mtn'?'mtn':c.ft==='lane'?'lanehex':'sea'},gC)});
   let wv='',pk='';
   cells.forEach(c=>{const x=c.x,y=c.y;
     if(c.ft==='lake')wv+=`M${x-3.5},${y-0.6}q1,-1 2,0t2,0t2,0M${x-2.5},${y+2}q1,-1 2,0t2,0`;
@@ -721,6 +1114,7 @@ function buildWorldSVG(svg,map,preview){
   R.home=el('path',{class:'home'},svg);
   R.own=el('path',{class:'b-own'},svg);
   el('path',{d:pb,class:'b-cty'},svg);el('path',{d:pc,class:'b-coast'},svg);
+  (map.lanes||[]).forEach(p=>el('polyline',{points:p.map(i=>cells[i].x+','+cells[i].y).join(' '),class:'route'},svg));
   const gm=el('g',{class:'marks'},svg);
   map.countries.forEach(k=>{const c=cells[k.cap];
     if(map.factions.some(f=>f.cap===k.cap))el('path',{d:starPath(c.x,c.y-5.3,2.9,1.2),class:'m-fcap'},gm);
@@ -822,7 +1216,7 @@ let G=null,R=null,B=null,ME=null,GID=null,REV=-1,unwatch=null,mapFor=null;
 const UI={ov:null,watchOnly:false,as:null,sel:null,cnt:1,info:null,rp:null,busy:false};
 let DRAFT={},BLD={},PLC={};
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-const SU={seed:newSeed(),map:null,cpu:false};
+const SU={seed:newSeed(),map:null,cpu:false,pick:'symmetric'};
 
 // Test-only stand-in for Firebase (used when the link has ?mock). Shares games between tabs of one browser.
 const MockBackend={
@@ -1041,6 +1435,7 @@ function act(a,ds){
     case 'forget':LS.set('frontline.games',LS.get('frontline.games',[]).filter(x=>x.id!==ds.id));openHome();return;
     case 'openSetup':openSetup();return;
     case 'reroll':readSetup();SU.seed=newSeed();SU.map=null;openSetup();return;
+    case 'pickmap':readSetup();SU.pick=ds.k;SU.map=null;openSetup();return;
     case 'opp':readSetup();SU.cpu=ds.v==='cpu';openSetup();return;
     case 'cpuSeats':cpuSeats();return;
     case 'create':readSetup();createGame();return;
@@ -1097,6 +1492,7 @@ function renderTop(){
 }
 function infoHTML(){
   const i=UI.info;if(i==null||!G)return'';const c=G.map.cells[i];
+  if(c.ft==='lane'){const us=G.st.filter(a=>a.c===i).map(a=>`${G.players[a.f].name}: ${a.n} arm${a.n>1?'ies':'y'}`);return`<div class="info"><b>Sea lane</b> · armies cross it freely and can wait here; it's never owned and pays nothing${us.length?'<br>'+esc(us.join(', ')):''}</div>`}
   if(!c.l)return`<div class="info">${c.ft==='lake'?'Lake — impassable':c.ft==='mtn'?'Mountains — impassable':'Ocean'}</div>`;
   const k=G.map.countries[c.c],o=G.owner[i],tags=[];
   if(G.map.factions.some(f=>f.cap===i))tags.push(`★ faction capital ($${INCOME.fcap} to its own faction, $${INCOME.cap} to anyone else)`);else if(c.cap>=0)tags.push(`● capital ($${INCOME.cap})`);else tags.push(`$${INCOME.hex}`);
@@ -1187,17 +1583,18 @@ function openMenu(){
     <div class="crow"><span class="cn">★ Faction capital</span><span class="cm">+$${inc.fcap}</span></div>
     <div class="crow"><span class="cn"><b>Income per turn</b></span><span class="cm"><b>+$${inc.total}</b></span></div>`})():'';
   showOverlay(`<div class="sheet"><div class="sh-h"><h2>Menu</h2><button class="ghost" data-act="closeOv">✕</button></div>
-  <h3>Players</h3>${pl}
+  <h3>Players${G.map.name?` · map: ${esc(G.map.name)}`:''}</h3>${pl}
   <div class="row"><button data-act="share">Invite link</button>${open||!mySeats().length?'<button data-act="seats">Pick a seat</button>':''}</div>
   ${open&&G.phase!=='over'?'<div class="row"><button data-act="cpuSeats">🤖 Computer plays open seats</button></div>':''}
   ${eco}
   <h3>How it works</h3>
   <p class="sub"><b>Moving:</b> every army can move every turn, up to ${MOVE} hexes through your own land. Entering a hex you don't own ends the move, so each army takes at most one new hex a turn. Tap an army, choose how many to send, then tap where they go.</p>
-  <p class="sub"><b>Battles:</b> armies that end up in the same hex as an enemy fight ${ROUNDS} rounds of Risk dice each turn. Whoever held the hex at the start of the turn defends: up to 2 dice and wins ties. Attackers roll up to 3. In neutral land, and when armies cross paths on a border, both roll up to 3 and a tie costs both an army. With three factions, everyone rolls against everyone. Battles carry on next turn; armies in battle can hold, be reinforced, or retreat 1 hex into your own land.</p>
+  <p class="sub"><b>Battles:</b> armies that end up in the same hex as an enemy fight ${ROUNDS} rounds of Risk dice each turn. Whoever held the hex at the start of the turn defends: up to 2 dice and wins ties. Attackers roll up to 3. In neutral land, and when armies cross paths on a border, both roll up to 3 and a tie costs both an army. With three factions, everyone rolls against everyone. Battles carry on next turn; armies in battle can hold, be reinforced, or retreat 1 hex into your own land or an empty sea lane.</p>
+  <p class="sub"><b>Sea lanes:</b> the dotted blue routes across the water. Armies cross them freely (they don't end a move) and can stop on them; long lanes take more than one turn. Sea lanes are never owned, and battles at sea are always meeting battles.</p>
   <p class="sub"><b>Money:</b> $${INCOME.hex} per hex, $${INCOME.cap} per capital, $${INCOME.fcap} for your ★ capital, every turn. Armies cost $${ARMY_COST}; recruit them at any capital you hold.</p>
   <p class="sub"><b>Land:</b> a hex with only your armies in it becomes yours. Land completely surrounded by one enemy switches to them at the end of the turn (not capitals, and not if armies are inside). Lose your ★ capital and you're out. After turn ${MAX_TURNS}, most land wins.</p>
   <h3>Map key</h3>
-  <p class="sub">★ faction capital · ● country capital · black hexes: mountains · light blue: lakes (both impassable) · the number on a token is how many armies are there · gold outline: armies waiting for orders · ⚔ battle · on the score bar, ✓ orders in, … still planning, 🤖 computer.</p>
+  <p class="sub">★ faction capital · ● country capital · black hexes: mountains · light blue: lakes (both impassable) · dotted blue: sea lanes · the number on a token is how many armies are there · gold outline: armies waiting for orders · ⚔ battle · on the score bar, ✓ orders in, … still planning, 🤖 computer.</p>
   <h3>Countries</h3>${cs}
   <h3>War log</h3><div class="log">${G.log.slice(-80).reverse().map(logLine).join('')}</div>
   <div class="row"><button data-act="home">All my games</button><button data-act="openSetup">New game</button></div>
@@ -1255,16 +1652,21 @@ function openHome(){
 }
 function readSetup(){const n=$('myname');if(n)LS.set('frontline.name',n.value.trim().slice(0,16))}
 function openSetup(){
-  if(!SU.map){SU.map=genWorldAny(SU.seed)}
+  if(!SU.map){SU.map=SU.pick==='random'?randomMap(SU.seed):namedMap(SU.pick)}
   const m=SU.map,land=m.cells.filter(c=>c.l).length,per=m.cells.filter(c=>c.l&&m.countries[c.c].f===0).length;
+  const nm=NAMED_MAPS.find(x=>x.key===SU.pick);
+  const chips=NAMED_MAPS.map(x=>`<button class="chip ${SU.pick===x.key?'on':''}" data-act="pickmap" data-k="${x.key}">${esc(x.name)}</button>`).join('')+`<button class="chip ${SU.pick==='random'?'on':''}" data-act="pickmap" data-k="random">🎲 Random</button>`;
   showOverlay(`<div class="sheet setup"><h1>NEW GAME</h1>
   <label class="h">Your name</label><input id="myname" class="pname" maxlength="16" placeholder="Your name" value="${esc(LS.get('frontline.name',''))}" style="border-left-color:${pcol(0)}">
   <label class="h">Opponents</label>
   <div class="row" style="margin-top:0"><button class="chip ${SU.cpu?'':'on'}" data-act="opp" data-v="friends">👥 Friends</button><button class="chip ${SU.cpu?'on':''}" data-act="opp" data-v="cpu">🤖 Computer</button></div>
   <div class="sub">${SU.cpu?'You play Red; the computer plays Blue and Green and submits its orders as soon as you submit yours.':"You'll play Red. Your two friends pick Blue and Green when they open the link."}</div>
+  <label class="h">Map</label>
+  <div class="row" style="margin-top:0">${chips}</div>
+  <div class="sub">${nm?`<b>${esc(nm.name)}</b> — ${esc(nm.note)} Tested for balance over 200 computer games.`:`<b>${esc(m.name)}</b> — a new random map. Random maps often favour one colour.`}</div>
   <svg id="prev" xmlns="${NS}" viewBox="${m.vb.join(' ')}"></svg>
-  <div class="sub center">${land} land hexes · each nation starts with ${per} hexes: a home country (★ capital) at the back and two small countries in front. Grey countries are neutral; black hexes are mountains and light blue are lakes.</div>
-  <div class="row"><button data-act="reroll">🎲 New map</button><button class="primary" data-act="create" id="bCreate">Create game</button></div>
+  <div class="sub center">${land} land hexes · each nation starts with ${per} hexes. Grey countries are neutral; black hexes are mountains, light blue are lakes, and dotted blue routes are sea lanes armies can cross.</div>
+  <div class="row">${SU.pick==='random'?'<button data-act="reroll">🎲 Another random map</button>':''}<button class="primary" data-act="create" id="bCreate">Create game</button></div>
   <div class="row"><button data-act="${G?'closeOv':'home'}">${G?'Back to current game':'Back'}</button></div></div>`,'full','setup');
   buildWorldSVG($('prev'),m,true);
 }
@@ -1283,7 +1685,7 @@ async function createGame(){
   }
   history.replaceState(null,'','?g='+id+(MOCK?'&mock':''));
   GID=id;REV=-1;mapFor=null;R=null;DRAFT={};BLD={};PLC={};UI.watchOnly=false;UI.as=null;UI.rp=null;
-  rememberGame(id,cpu?'vs computer':'3 players');SU.seed=newSeed();SU.map=null;
+  rememberGame(id,(cpu?'vs computer':'3 players')+(SU.map&&SU.map.name?' · '+SU.map.name:''));SU.seed=newSeed();SU.map=null;
   applyRemote({v:3,rev:0,state:JSON.stringify(g)},true);
   startWatching();
   if(!cpu)openShare(true);else hideOverlay();

@@ -1,11 +1,34 @@
 # Warsea Conquest — Changelog
 
-*Last updated: November 16, 2026*
+*Last updated: November 18, 2026 (v0.5.0 released)*
 
 ## Waiting for next build
 Agreed changes go here until I say "build". Each one is cleared once it's built.
 
-### Map-making (agreed Nov 16, 2026), planned as v0.5.0
+- *Nothing agreed yet.*
+
+## Versions
+Newest first. "GitHub" is the saved version on GitHub; the live game always shows the newest one there.
+
+| Version | Date | What changed | GitHub |
+|---|---|---|---|
+| **v0.5.0** | Nov 18, 2026 | **Map-making.** Sea lanes (cross freely, never owned, meeting battles at sea). Three named maps chosen for balance from 179 candidates × 200 computer games: **Symmetric**, **Archipelago** and **Continental**; plus 🎲 Random maps in seven styles. Computer player v2. See details below | `PENDING` ← **live now** |
+| **v0.4.0** ✓ | Nov 12, 2026 | **Milestone: first confirmed playable version** (played Nov 14). **Simplified, Risk-style rules.** One army type with Risk dice battles (3 rounds per turn; defended, meeting, border and three-way battles; retreats). No terrain. Money only ($1 per hex, $2 per capital, $5 own capital; armies $10, recruited at any capital). No supply lines, no ports, no order limit (every army can move; up to 3 hexes through own land, entering new land ends the move). 10 starting armies placed in the home country. New maps: inland lakes, mountain clumps, equal starting land, small countries as a buffer. New order screen (army counters, gold outlines, Next ▶, splitting). See details below | `5a73f91` |
+| v0.3.1 | Nov 1, 2026 | Hit points ×4 so battles last longer | Never released; replaced by v0.4.0 |
+| v0.3.0 | Nov 1, 2026 | **Stage 3, economy:** four currencies, factories and resource hexes, supply paths over land and between ports, building units, computer players that build | `031a6b9` |
+| v0.2.0 | Nov 1, 2026 | **Stage 2, combat:** contact, battles across steps, strength and hit points, terrain bonuses, retreat, head-on collisions, HP bars, battle replays | `d08e2a7` |
+| v0.1.2 | Nov 1, 2026 | 6 neutral countries; computer opponents for solo testing | `889588a`, re-uploaded as `4f18d8b` |
+| v0.1.1 | Nov 1, 2026 | Stage 1 update (exact changes not recorded) | `e34c7b6` |
+| v0.1.0 | Nov 1, 2026 | **Stage 1, map and movement:** random hex map, terrain, simultaneous orders, replay, hex control, encirclement, capital capture, 50 turns. Renamed to Warsea Conquest | `3cda967` |
+| v0.0 | Oct 31, 2026 | "Frontline", the original Risk-style prototype with online play | `27b0fa1` |
+
+## v0.5.0 details
+**Named maps (my choice, Nov 18):** shortlist maps #4, #5 and #6, named **Symmetric**, **Archipelago** and **Continental**.
+- Symmetric: Red 35% · Blue 35% · Green 30% wins over 200 computer games, but only 0.04 eliminations per game, so games are usually decided by land after turn 50.
+- Archipelago: 35% · 29% · 36%. **Note:** the shortlist picture of this map wrongly showed long routes round the outside; the tested (and built) map doesn't have them. The pictured version came out less fair in 200 games (41% · 31% · 28%), so the tested version was built. Swapping is a one-line change.
+- Continental: 35% · 29% · 37% (it was "Classic" style in the shortlist).
+
+**Agreed design (Nov 16):**
 **Sea lanes**
 - Maps can be split into separate continents or islands, linked by **sea lanes**: specific chains of ocean hexes. The rest of the ocean stays impassable.
 - **Moving:** sea-lane hexes don't stop movement. Armies cross them freely within the usual 3 hexes and stop only if they meet enemy armies. Landing on land you don't own still ends the move.
@@ -28,7 +51,7 @@ Agreed changes go here until I say "build". Each one is cleared once it's built.
 - **Random maps stay** as an option alongside the named maps.
 - **Order of work:** (1) sea lanes and layout styles, with sample maps to review; (2) a modest computer-player upgrade (using sea lanes, holding chokepoints, gathering bigger attacks), tested by playing the new bot against the old one; (3) the simulation tool and map selection.
 
-### Progress on v0.5.0 (work in progress, not live)
+**How it was made:**
 Work in progress is saved on the GitHub branch **`v0.5-dev`** (folder `dev/`), separate from the live game.
 - **Step 1 done (Nov 16):** sea lanes and layout styles in a development copy of the map generator; sample maps reviewed.
 - **Step 2 done (Nov 16): computer player v2.** It plans each turn as a whole: it estimates where enemy armies could strike next turn, keeps enough armies on its capitals, pools armies from several stacks for attacks it expects to win, grabs land with single armies, crosses sea lanes, and marches spare armies toward the front over several turns.
@@ -39,21 +62,10 @@ Work in progress is saved on the GitHub branch **`v0.5-dev`** (folder `dev/`), s
   - **Fixing the measurement:** a first run showed even symmetrical maps (three identical positions) coming out as unfair as 9% / 86% / 6%. The cause was the computer player always breaking ties the same way, which favours one seat on a given map. Claude made it vary its choices from game to game; after that, symmetrical maps came out at **34% / 33% / 33%** overall, with typical gaps of 4–6% per map (normal luck for 200 games). All results below use the corrected method.
   - **Finding: random maps are usually unfair.** On a typical random map, one position wins about two thirds of the games (median gap from a third: about 33%). Only a few random maps per style came out within 8%. Symmetrical maps were fair almost every time (24 of 28).
   - **Shortlist:** the 11 most balanced maps, with pictures, are saved on the `v0.5-dev` branch in `dev/sim/shortlist/`. Caveat: balance is measured with computer players; people may find advantages they don't.
-- **Next:** I pick 5 named maps from the shortlist (up to 2 symmetrical). Then build v0.5.0.
 
-## Versions
-Newest first. "GitHub" is the saved version on GitHub; the live game always shows the newest one there.
+**Testing:** 17 rule checks and 8 sea-lane checks (all pass); 10 computer-only games on each named map; in the browser, the map picker, a sea-lane crossing, the replay and help screens, a v0.4.0 game still opening, and a 9-turn friends game on three simulated phones. Not yet played on real phones.
 
-| Version | Date | What changed | GitHub |
-|---|---|---|---|
-| **v0.4.0** ✓ | Nov 12, 2026 | **Milestone: first confirmed playable version** (played Nov 14). **Simplified, Risk-style rules.** One army type with Risk dice battles (3 rounds per turn; defended, meeting, border and three-way battles; retreats). No terrain. Money only ($1 per hex, $2 per capital, $5 own capital; armies $10, recruited at any capital). No supply lines, no ports, no order limit (every army can move; up to 3 hexes through own land, entering new land ends the move). 10 starting armies placed in the home country. New maps: inland lakes, mountain clumps, equal starting land, small countries as a buffer. New order screen (army counters, gold outlines, Next ▶, splitting). See details below | `5a73f91` ← **live now** |
-| v0.3.1 | Nov 1, 2026 | Hit points ×4 so battles last longer | Never released; replaced by v0.4.0 |
-| v0.3.0 | Nov 1, 2026 | **Stage 3, economy:** four currencies, factories and resource hexes, supply paths over land and between ports, building units, computer players that build | `031a6b9` |
-| v0.2.0 | Nov 1, 2026 | **Stage 2, combat:** contact, battles across steps, strength and hit points, terrain bonuses, retreat, head-on collisions, HP bars, battle replays | `d08e2a7` |
-| v0.1.2 | Nov 1, 2026 | 6 neutral countries; computer opponents for solo testing | `889588a`, re-uploaded as `4f18d8b` |
-| v0.1.1 | Nov 1, 2026 | Stage 1 update (exact changes not recorded) | `e34c7b6` |
-| v0.1.0 | Nov 1, 2026 | **Stage 1, map and movement:** random hex map, terrain, simultaneous orders, replay, hex control, encirclement, capital capture, 50 turns. Renamed to Warsea Conquest | `3cda967` |
-| v0.0 | Oct 31, 2026 | "Frontline", the original Risk-style prototype with online play | `27b0fa1` |
+**Development files** (simulation tool, results, sample-map tools) stay on the GitHub branch `v0.5-dev` for future map work.
 
 ## v0.4.0 details
 **Decisions Claude made while building** (tell me if any should change):
@@ -70,6 +82,7 @@ Newest first. "GitHub" is the saved version on GitHub; the live game always show
 **Testing:** 17 rule checks with rigged dice (ties, meeting and border battles, three-way battles, movement limits, splitting, retreats, income, recruiting, encirclement, elimination, placement); 40+ computer-only games to the end; a game against the computer and an 8-turn friends game on three simulated phones (all three phones ended with the same game). **Nov 14: played by me on the live site; it plays well and follows all the agreed rules.**
 
 ## Docs history
+- **Nov 18, 2026:** v0.5.0 released; game rules updated for maps, sea lanes and computer player v2; project outline updated.
 - **Nov 14, 2026:** v0.4.0 recorded as the first milestone. Added "Progress so far", "Key decisions so far, and why" and "Open questions for future stages" to the project outline.
 - **Nov 12, 2026:** reorganized into 3 docs (project outline, game rules, changelog). They replace `warsea-conquest-context.md` and both copies of `warsea-conquest-design-draft.md` (v1–v6.1). The older copies' differing hit-point numbers were resolved to what the game actually uses.
 - **Nov 1, 2026:** design drafts v1–v6.1. v1 collected my ideas; v2–v3 added my answers to Claude's questions; v4–v6.1 recorded each stage as it was built.
