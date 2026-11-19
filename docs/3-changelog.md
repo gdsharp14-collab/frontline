@@ -7,9 +7,17 @@ Agreed changes go here until I say "build". Each one is cleared once it's built.
 
 ### Recruiting (agreed Nov 18)
 - **No recruiting at a capital where a battle is going on.** In the Recruit screen, a capital in battle at the start of the turn is greyed out.
+- Border battles count: a capital whose armies are in a border battle is also blocked.
+- If enemy armies move in during the turn and a battle starts there, the queued armies aren't recruited and the money is kept. (Today they appear and join the battle.)
+
+### Attrition (agreed Nov 18)
+- **Armies that can't trace a path to a capital they hold lose 2 armies per turn.** The path must run through their own territory; any country capital counts, not just the ★ capital.
 - *Details still to confirm (Claude's suggestions):*
-  - Border battles count: a capital whose armies are in a border battle is also blocked.
-  - If enemy armies move in during the turn and a battle starts there, the queued armies aren't recruited and the money is kept. (Today they appear and join the battle.)
+  - **Sea lanes count as part of the path** if no enemy armies are on them, so armies across the water from a capital they hold aren't cut off.
+  - **Enemy armies block the path**, even on your own land.
+  - **The army's own hex doesn't need to be yours.** An army attacking into enemy or neutral land is supplied if it can trace a path from there.
+  - **Checked at the end of the turn**, after battles and encirclement, before new armies appear. A cut-off army loses 2 per hex it's on, so a group of 1 or 2 is wiped out.
+  - Shown in the replay and the war log; with fog, other players only see it where they have vision.
 
 ## Versions
 Newest first. "GitHub" is the saved version on GitHub; the live game always shows the newest one there.
