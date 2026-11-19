@@ -5,7 +5,11 @@
 ## Waiting for next build
 Agreed changes go here until I say "build". Each one is cleared once it's built.
 
-- *Nothing agreed yet.*
+### Recruiting (agreed Nov 18)
+- **No recruiting at a capital where a battle is going on.** In the Recruit screen, a capital in battle at the start of the turn is greyed out.
+- *Details still to confirm (Claude's suggestions):*
+  - Border battles count: a capital whose armies are in a border battle is also blocked.
+  - If enemy armies move in during the turn and a battle starts there, the queued armies aren't recruited and the money is kept. (Today they appear and join the battle.)
 
 ## Versions
 Newest first. "GitHub" is the saved version on GitHub; the live game always shows the newest one there.
