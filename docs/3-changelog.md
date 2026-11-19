@@ -15,7 +15,7 @@ Each turn, every army checks whether it can trace a path through its own territo
 - **To the ★ faction capital** (directly, or through a country capital you hold that connects to it): **no attrition.**
 - **Only to a country capital you hold that is itself cut off from the ★ capital:** **loses 1 per turn.** For example, a besieged capital's garrison, or armies in the pocket around it.
 - **To no capital you hold at all:** **loses 2 per turn.**
-- *Details still to confirm (Claude's suggestions):*
+- *Details (Claude's suggestions, confirmed Nov 18):*
   - **Sea lanes count as part of the path** if no enemy armies are on them, so armies across the water from a capital they hold aren't cut off.
   - **Enemy armies block the path**, even on your own land. That's what lets a siege cut a capital off.
   - **The army's own hex doesn't need to be yours.** An army attacking into enemy or neutral land is supplied if it can trace a path from there.
