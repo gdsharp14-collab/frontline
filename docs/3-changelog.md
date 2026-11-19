@@ -10,14 +10,18 @@ Agreed changes go here until I say "build". Each one is cleared once it's built.
 - Border battles count: a capital whose armies are in a border battle is also blocked.
 - If enemy armies move in during the turn and a battle starts there, the queued armies aren't recruited and the money is kept. (Today they appear and join the battle.)
 
-### Attrition (agreed Nov 18)
-- **Armies that can't trace a path to a capital they hold lose 2 armies per turn.** The path must run through their own territory; any country capital counts, not just the ★ capital.
+### Attrition (agreed Nov 18, revised the same day)
+Each turn, every army checks whether it can trace a path through its own territory:
+- **To the ★ faction capital** (directly, or through a country capital you hold that connects to it): **no attrition.**
+- **Only to a country capital you hold that is itself cut off from the ★ capital:** **loses 1 per turn.** For example, a besieged capital's garrison, or armies in the pocket around it.
+- **To no capital you hold at all:** **loses 2 per turn.**
 - *Details still to confirm (Claude's suggestions):*
   - **Sea lanes count as part of the path** if no enemy armies are on them, so armies across the water from a capital they hold aren't cut off.
-  - **Enemy armies block the path**, even on your own land.
+  - **Enemy armies block the path**, even on your own land. That's what lets a siege cut a capital off.
   - **The army's own hex doesn't need to be yours.** An army attacking into enemy or neutral land is supplied if it can trace a path from there.
-  - **Checked at the end of the turn**, after battles and encirclement, before new armies appear. A cut-off army loses 2 per hex it's on, so a group of 1 or 2 is wiped out.
+  - **Checked at the end of the turn**, after battles and encirclement, before new armies appear. Losses are per hex, so a group of 1 or 2 can be wiped out.
   - Shown in the replay and the war log; with fog, other players only see it where they have vision.
+  - **The ★ capital itself is always in supply**, so armies besieged there never suffer attrition.
 
 ## Versions
 Newest first. "GitHub" is the saved version on GitHub; the live game always shows the newest one there.
