@@ -123,6 +123,8 @@ polygon.mtn{fill:#0b0b0b;stroke:#000;stroke-width:.35}
 .tok.wait rect{stroke:#f2c14e;stroke-width:1.2}
 .tok.sel rect{stroke:#fff;stroke-width:1.6}
 .tok.ghost{opacity:.6}.tok.ghost rect{stroke-dasharray:1.2 .8}
+.tok.seen{opacity:.5}.tok.seen rect{stroke-dasharray:1 .9;stroke:#ddd}
+.fog{fill:rgba(3,7,13,.5);pointer-events:none}
 .arrow{fill:none;stroke-width:1.1;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
 .loss{font-size:4.2px;font-weight:800;text-anchor:middle;fill:#ff8a73;paint-order:stroke;stroke:#000;stroke-width:.8px}
 .capv{font-size:3.1px;font-weight:700;text-anchor:middle;fill:#fff;paint-order:stroke;stroke:#000;stroke-width:.6px;pointer-events:none}
@@ -205,7 +207,8 @@ const START_ARMIES=10;   // armies each faction places in its home country befor
 const ARMY_COST=10;      // $ per new army
 const MOVE=3;            // hexes an army can move through its own land per turn
 const ROUNDS=3;          // dice rounds per battle per turn
-const INCOME={hex:1,cap:2,fcap:5}; // $ per turn: plain hex, country capital, own faction capital
+const INCOME={hex:1,cap:2,fcap:5};
+const SIGHT=2;          // fog of war: armies see this many hexes around them // $ per turn: plain hex, country capital, own faction capital
 const PCOL=[{name:'Red',h:4},{name:'Blue',h:214},{name:'Green',h:140}];
 const SYL=['ka','ro','vel','dun','mar','sil','tor','bra','en','ost','gal','ny','hal','ver','ash','kel','mor','ith','lan','zar','fen','dor','sha','bel','tir','ul','gor','ri','cas','vor','pol','stav','kur','lein','mir','tal'];
 const CEND=['ia','os','ar','and','ica','ea','heim','avia','istan','onia','mark','land'];
@@ -646,7 +649,8 @@ function newGame(map,opts){
   return{v:3,id:null,map,players,owner,st:[],links:[],money:players.map(()=>0),inc:players.map(()=>null),
     turn:0,maxTurns:MAX_TURNS,phase:'place',
     place:players.map(()=>[]),orders:players.map(()=>[]),recruits:players.map(()=>[]),submitted:players.map(()=>false),
-    replay:null,log:[{t:0,f:-1,m:'The war begins. Each nation places its '+START_ARMIES+' armies.'}],winners:null,cpu};
+    replay:null,log:[{t:0,f:-1,m:'The war begins. Each nation places its '+START_ARMIES+' armies.'}],winners:null,cpu,
+    fog:true,seen:players.map(()=>[])};
 }
 const landCount=(g,f)=>g.owner.reduce((s,o,i)=>s+(o===f&&g.map.cells[i].l?1:0),0);
 const armyCount=(g,f)=>g.st.reduce((s,a)=>s+(a.f===f?a.n:0),0);
@@ -685,6 +689,49 @@ function reachFor(g,f,from,retreat){
   return{dist,prev};
 }
 function pathTo(rr,start,target){const p=[];let x=target;while(x!==start&&x!=null){p.unshift(x);x=rr.prev.get(x)}return p}
+
+// ================= fog of war =================
+// A faction sees every hex it owns, every hex next to its land, and every hex within SIGHT of its armies.
+// st can be [{f,c,n}] or [[f,c,n]]. Returns 1/0 per hex.
+function visionOf(M,owner,st,f){
+  const v=new Uint8Array(M.cells.length);
+  for(let i=0;i<M.cells.length;i++)if(owner[i]===f&&M.cells[i].l){v[i]=1;for(const j of M.cells[i].nb)if(j>=0)v[j]=1}
+  for(const a of st){const af=Array.isArray(a)?a[0]:a.f,c=Array.isArray(a)?a[1]:a.c,n=Array.isArray(a)?a[2]:a.n;
+    if(af!==f||n<=0)continue;
+    let ring=[c];v[c]=1;
+    for(let d=0;d<SIGHT;d++){const nx=[];for(const x of ring)for(const y of M.cells[x].nb)if(y>=0){v[y]=1;nx.push(y)}ring=nx}
+  }
+  return v;
+}
+// The game as faction f sees it: enemy armies out of sight are removed. With marks, last-seen markers
+// are added as if the armies were still there (the computer player plans with them).
+function fogView(g,f,marks){
+  if(!g.fog)return g;
+  const v=visionOf(g.map,g.owner,g.st,f);
+  const st=g.st.filter(a=>a.f===f||v[a.c]).map(a=>({f:a.f,c:a.c,n:a.n}));
+  if(marks)for(const [h,mf,n] of (g.seen&&g.seen[f])||[])if(!v[h]&&g.players[mf]&&g.players[mf].alive)st.push({f:mf,c:h,n});
+  const links=(g.links||[]).filter(l=>(l[1]===f||l[3]===f)||(v[l[0]]&&v[l[2]]));
+  return Object.assign({},g,{st:normalize(st),links,vis:v});
+}
+// After a turn: what each faction could see in each replay frame, its last-seen markers, and who saw each battle.
+function fogAfterTurn(g,so,frames){
+  const M=g.map,N=M.cells.length;
+  g.seen=g.players.map(()=>[]);
+  const owner=so.slice(),vis=g.players.map(()=>[]);
+  frames.forEach(fr=>{(fr.fl||[]).forEach(([h,o])=>owner[h]=o);g.players.forEach((p,f)=>vis[f].push(visionOf(M,owner,fr.st,f)))});
+  g.players.forEach((p,f)=>{
+    if(!p.alive)return;
+    const V=vis[f],last=V[V.length-1];
+    for(let h=0;h<N;h++){if(last[h])continue;
+      let k=V.length-2;while(k>=0&&!V[k][h])k--;if(k<0)continue;
+      // the hex went out of sight: whatever enemy armies were there when it was last seen stay as a marker
+      for(const [af,c,n] of frames[k].st)if(c===h&&af!==f&&n>0)g.seen[f].push([h,af,n]);
+    }
+  });
+  // battle and recruiting lines in the log only go to those who saw them
+  for(const e of g.log){
+    if(e.hx){const k0=e.fk||0;e.w=g.players.map((p,f)=>f).filter(f=>e.hx.some(h=>vis[f].some((V,k)=>k>=k0&&V[h])));delete e.hx;delete e.fk}}
+}
 
 // ================= placement (before turn 1) =================
 function homeHexes(g,f){const M=g.map;return M.cells.map((c,i)=>i).filter(i=>M.cells[i].l&&M.cells[i].c===M.factions[f].home)}
@@ -780,7 +827,7 @@ function resolveTurn(g){
     return out;
   };
   const roll=k=>Array.from({length:k},()=>ROLL()).sort((x,y)=>y-x);
-  const start=pairings();
+  const start=pairings(),battleFrame=frames.length;
   const summary=new Map(); // per battle place: armies before
   if(start.length){
     const places=new Map();
@@ -811,7 +858,7 @@ function resolveTurn(g){
     const parts=[...v.sides.entries()].map(([k,before])=>{const [f,h]=k.split(':').map(Number);return`${g.players[f].name} ${before}→${armiesAt(g,h,f)}`});
     const where=key[0]==='b'?`between ${[...v.hexes].map(h=>cname(g,h)).join(' and ')}`:`at ${cname(g,[...v.hexes][0])}`;
     const fs=[...v.sides.keys()].map(k=>+k.split(':')[0]);
-    glog(g,fs[0],`⚔ Battle ${where}: ${parts.join(', ')}`);tx.push(`⚔ Battle ${where}: ${parts.join(', ')}`);
+    glog(g,fs[0],`⚔ Battle ${where}: ${parts.join(', ')}`);if(g.fog){const e=g.log[g.log.length-1];e.hx=[...v.hexes];e.fk=battleFrame-1}tx.push(`⚔ Battle ${where}: ${parts.join(', ')}`);
   });
   // border battles end when either side is gone
   const seen=new Set();
@@ -832,7 +879,7 @@ function resolveTurn(g){
   });
   g.st=normalize(g.st);
   const bt={};built.forEach(([f,c,n])=>{bt[f]=(bt[f]||0)+n});
-  Object.entries(bt).forEach(([f,n])=>{glog(g,+f,`🏭 ${g.players[f].name} recruited ${n} arm${n>1?'ies':'y'}`);tx.push(`🏭 ${g.players[f].name} recruited ${n}`)});
+  Object.entries(bt).forEach(([f,n])=>{glog(g,+f,`🏭 ${g.players[f].name} recruited ${n} arm${n>1?'ies':'y'}`);if(g.fog)g.log[g.log.length-1].w=[+f];tx.push(`🏭 ${g.players[f].name} recruited ${n}`)});
   g.players.forEach((p,f)=>{if(!p.alive){g.money[f]=0;g.inc[f]=null;return}const inc=incomeOf(g,f);g.money[f]+=inc.total;g.inc[f]=inc});
   snap('end',{fl:enc.map(([h,by])=>[h,by]),built});
   for(let f=0;f<NF;f++){
@@ -840,6 +887,7 @@ function resolveTurn(g){
     if(gain||lost)glog(g,f,`${g.players[f].name}: +${gain} / −${lost} hexes this turn (now ${landCount(g,f)})`);
   }
   g.replay={turn:T,so,su,frames,tx};
+  if(g.fog)fogAfterTurn(g,so,frames);
   g.turn++;
   g.orders=g.players.map(()=>[]);g.recruits=g.players.map(()=>[]);g.submitted=g.players.map(()=>false);
   const al=g.players.map((p,f)=>p.alive?f:-1).filter(f=>f>=0);
@@ -1073,16 +1121,16 @@ function advance(g){
   for(let k=0;k<=MAX_TURNS+2&&g.phase!=='over';k++){
     if(!g.players.every((p,f)=>!p.alive||p.ai||g.submitted[f]))return;
     if(g.phase==='place'){
-      g.players.forEach((p,f)=>{if(p.ai&&!g.submitted[f]){g.place[f]=p.bot==='v1'?aiPlace(g,f):aiPlace2(g,f);g.submitted[f]=true}});
+      g.players.forEach((p,f)=>{if(p.ai&&!g.submitted[f]){const V=fogView(g,f,true);g.place[f]=p.bot==='v1'?aiPlace(V,f):aiPlace2(V,f);g.submitted[f]=true}});
       startPlay(g);
     }else{
-      g.players.forEach((p,f)=>{if(p.alive&&p.ai&&!g.submitted[f]){const v1=p.bot==='v1';g.orders[f]=v1?aiOrders(g,f):aiOrders2(g,f);g.recruits[f]=v1?aiRecruits(g,f):aiRecruits2(g,f);g.submitted[f]=true}});
+      g.players.forEach((p,f)=>{if(p.alive&&p.ai&&!g.submitted[f]){const v1=p.bot==='v1',V=fogView(g,f,true);g.orders[f]=v1?aiOrders(V,f):aiOrders2(V,f);g.recruits[f]=v1?aiRecruits(V,f):aiRecruits2(V,f);g.submitted[f]=true}});
       resolveTurn(g);
     }
     if(g.players.some(p=>p.alive&&!p.ai))return;
   }
 }
-if(typeof module!=='undefined')module.exports={NAMED_MAPS,namedMap,randomMap,genStyled,SYMSTYLES,aiOrders2,aiRecruits2,aiPlace2,isLane,passable,STYLES,genWorld,genWorldAny,newGame,startPlay,resolveTurn,advance,aiOrders,aiPlace,aiRecruits,reachFor,pathTo,battleSet,incomeOf,landCount,armyCount,armiesAt,normalize,encircleOwners,cleanPlace,homeHexes,setRoll,hexDist,START_ARMIES,ARMY_COST,MOVE,ROUNDS,INCOME,NF};
+if(typeof module!=='undefined')module.exports={visionOf,fogView,fogAfterTurn,SIGHT,NAMED_MAPS,namedMap,randomMap,genStyled,SYMSTYLES,aiOrders2,aiRecruits2,aiPlace2,isLane,passable,STYLES,genWorld,genWorldAny,newGame,startPlay,resolveTurn,advance,aiOrders,aiPlace,aiRecruits,reachFor,pathTo,battleSet,incomeOf,landCount,armyCount,armiesAt,normalize,encircleOwners,cleanPlace,homeHexes,setRoll,hexDist,START_ARMIES,ARMY_COST,MOVE,ROUNDS,INCOME,NF};
 
 
 // ================= drawing =================
@@ -1115,6 +1163,7 @@ function buildWorldSVG(svg,map,preview){
   R.own=el('path',{class:'b-own'},svg);
   el('path',{d:pb,class:'b-cty'},svg);el('path',{d:pc,class:'b-coast'},svg);
   (map.lanes||[]).forEach(p=>el('polyline',{points:p.map(i=>cells[i].x+','+cells[i].y).join(' '),class:'route'},svg));
+  R.fog=el('path',{class:'fog'},svg); // fog of war: hexes out of sight are shaded
   const gm=el('g',{class:'marks'},svg);
   map.countries.forEach(k=>{const c=cells[k.cap];
     if(map.factions.some(f=>f.cap===k.cap))el('path',{d:starPath(c.x,c.y-5.3,2.9,1.2),class:'m-fcap'},gm);
@@ -1135,10 +1184,10 @@ function drawArmies(list){
   for(const c in by){
     const arr=by[c].sort((a,b)=>(a.ghost?1:0)-(b.ghost?1:0)||a.f-b.f),cell=G.map.cells[c],k=arr.length;
     arr.forEach((a,i)=>{
-      const w=a.n>99?12:a.n>9?9.6:7.6,off=k>1?(i-(k-1)/2)*8.6:0;
-      const g=el('g',{class:'tok'+(a.wait?' wait':'')+(a.sel?' sel':'')+(a.ghost?' ghost':''),transform:`translate(${(cell.x+off).toFixed(2)},${(cell.y+1.2).toFixed(2)})`},R.unitsG);
+      const t=(a.seen?'~':'')+a.n,w=t.length>3?14:t.length>2?12:t.length>1?9.6:7.6,off=k>1?(i-(k-1)/2)*8.6:0;
+      const g=el('g',{class:'tok'+(a.wait?' wait':'')+(a.sel?' sel':'')+(a.ghost?' ghost':'')+(a.seen?' seen':''),transform:`translate(${(cell.x+off).toFixed(2)},${(cell.y+1.2).toFixed(2)})`},R.unitsG);
       el('rect',{x:-w/2,y:-3.8,width:w,height:7.6,rx:1.6,fill:ucol(a.f)},g);
-      el('text',{x:0,y:0.1},g).textContent=a.n;
+      el('text',{x:0,y:0.1},g).textContent=t;
     });
   }
 }
@@ -1228,6 +1277,19 @@ const MockBackend={
 };
 
 const mySeats=()=>G?G.players.map((p,i)=>p.uid===ME?i:-1).filter(i=>i>=0):[];
+// Fog of war: whose eyes the map is drawn through. null = see everything (no fog, game over, or all
+// this phone's seats are out); -1 = a watcher without a seat, who sees no armies.
+function viewer(){
+  if(!G||!G.fog||G.phase==='over')return null;
+  const s=mySeats();
+  if(UI.as!=null&&s.includes(UI.as)&&G.players[UI.as].alive)return UI.as;
+  const a=s.find(f=>G.players[f].alive);
+  if(a!=null)return a;
+  return s.length?null:-1;
+}
+function visNow(){const vf=viewer();if(vf==null)return null;return vf<0?new Uint8Array(G.map.cells.length):visionOf(G.map,G.owner,G.st,vf)}
+const logOK=e=>{const vf=viewer();return vf==null||!e.w||(vf>=0&&e.w.includes(vf))};
+const reachView=f=>G.fog?fogView(G,f,false):G; // plotted moves only know about armies you can see
 const gameLink=id=>location.origin+location.pathname+'?g='+id+(MOCK?'&mock':'');
 const withTimeout=(p,ms,what)=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error(what+' timed out')),ms))]);
 function setNet(s){$('net').textContent=s==='off'?'⚠ Offline':''}
@@ -1313,7 +1375,7 @@ function onCellTap(i){
     const pl=getPlace(f),e=pl.find(p=>p.c===i);if(e)e.n++;else pl.push({c:i,n:1});savePlace(f);render();return;
   }
   if(UI.sel!=null&&i!==UI.sel){
-    const ret=inBattle(f,UI.sel),rr=reachFor(G,f,UI.sel,ret);
+    const ret=inBattle(f,UI.sel),rr=reachFor(reachView(f),f,UI.sel,ret);
     if(rr.dist.has(i)){
       const n=Math.max(1,Math.min(UI.cnt,canSend(f,UI.sel)));
       getDraft(f).push({from:UI.sel,n,path:pathTo(rr,UI.sel,i),r:ret});saveDraft(f);
@@ -1364,25 +1426,32 @@ function playPause(){
 }
 function rpStep(d){if(!UI.rp)return;stopPlay();const n=G.replay.frames.length;UI.rp.i=Math.max(0,Math.min(n-1,UI.rp.i+d));render()}
 function rpView(){
-  const r=G.replay,i=UI.rp.i,owner=r.so.slice();
-  for(let k=0;k<=i;k++)(r.frames[k].fl||[]).forEach(([h,o])=>owner[h]=o);
-  const fr=r.frames[i];
-  return{owner,armies:fr.st.map(([f,c,n])=>({f,c,n})),fr};
+  const r=G.replay,i=UI.rp.i,owner=r.so.slice();let before=null;
+  for(let k=0;k<=i;k++){if(k===i)before=owner.slice();(r.frames[k].fl||[]).forEach(([h,o])=>owner[h]=o)}
+  const fr=r.frames[i],vf=viewer();let armies=fr.st.map(([f,c,n])=>({f,c,n})),vis=null,ev=null;
+  if(vf!=null){const N=G.map.cells.length;
+    if(vf<0){vis=new Uint8Array(N);ev=vis}
+    else{vis=visionOf(G.map,owner,fr.st,vf);ev=vis.slice();
+      if(i>0){const pv=visionOf(G.map,before,r.frames[i-1].st,vf);for(let h=0;h<N;h++)if(pv[h])ev[h]=1}}
+    armies=armies.filter(a=>a.f===vf||vis[a.c])}
+  // vis: what you see in this frame; ev: what you saw just before or after it (for moves and losses)
+  const sees=h=>!ev||ev[h];
+  return{owner,armies,fr,vis,sees,vf};
 }
-function rpText(fr){
-  const r=G.replay,P=f=>G.players[f].name,cn=h=>esc(G.map.countries[G.map.cells[h].c].name);
+function rpText(v){
+  const fr=v.fr,sees=v.sees,r=G.replay,P=f=>G.players[f].name,cn=h=>esc(G.map.countries[G.map.cells[h].c].name);
   if(fr.k==='start')return`Start of turn ${r.turn}.`;
-  if(fr.k==='retreat')return'Retreats: '+fr.mv.map(([a,b,f,n])=>`${P(f)} ${n} from ${cn(a)}`).join(' · ');
-  if(fr.k==='move'){const p=[];const by={};(fr.mv||[]).forEach(([a,b,f,n])=>{by[f]=(by[f]||0)+1});
+  if(fr.k==='retreat')return'Retreats: '+(fr.mv.filter(([a,b])=>sees(a)||sees(b)).map(([a,b,f,n])=>`${P(f)} ${n} from ${cn(a)}`).join(' · ')||'out of sight');
+  if(fr.k==='move'){const p=[];const by={};(fr.mv||[]).forEach(([a,b,f,n])=>{if(sees(a)||sees(b))by[f]=(by[f]||0)+1});
     Object.keys(by).forEach(f=>p.push(`${P(f)}: ${by[f]} group${by[f]>1?'s':''} move`));
-    (fr.cross||[]).forEach(([a,fa,b,fb])=>p.push(`⚔ ${P(fa)} and ${P(fb)} collide between ${cn(a)} and ${cn(b)}`));
+    (fr.cross||[]).filter(([a,fa,b])=>sees(a)||sees(b)).forEach(([a,fa,b,fb])=>p.push(`⚔ ${P(fa)} and ${P(fb)} collide between ${cn(a)} and ${cn(b)}`));
     (fr.el||[]).forEach(f=>p.push(`☠ ${P(f)} eliminated`));
     return'Movement · '+(p.join(' · ')||'…')}
-  if(fr.k==='battle'){const l={};(fr.hits||[]).forEach(([h,f,n])=>{l[f]=(l[f]||0)+n});
+  if(fr.k==='battle'){const l={};(fr.hits||[]).forEach(([h,f,n])=>{if(sees(h))l[f]=(l[f]||0)+n});
     const p=Object.keys(l).map(f=>`${P(f)} −${l[f]}`);(fr.el||[]).forEach(f=>p.push(`☠ ${P(f)} eliminated`));
-    return`Battle round ${fr.round}: `+(p.join(' · ')||'no losses')}
+    return`Battle round ${fr.round}: `+(p.join(' · ')||(v.vis?'no losses in sight':'no losses'))}
   if(fr.k==='end'){const p=[];const enc=(fr.fl||[]).length;if(enc)p.push(`${enc} encircled hex${enc>1?'es':''} changed hands`);
-    const b={};(fr.built||[]).forEach(([f,c,n])=>{b[f]=(b[f]||0)+n});Object.keys(b).forEach(f=>p.push(`${P(f)} recruited ${b[f]}`));
+    const b={};(fr.built||[]).forEach(([f,c,n])=>{if(!v.vis||v.vis[c])b[f]=(b[f]||0)+n});Object.keys(b).forEach(f=>p.push(`${P(f)} recruited ${b[f]}`));
     return'End of turn. '+(p.join(' · ')||'')}
   return'';
 }
@@ -1451,6 +1520,12 @@ function render(){
   const M=G.map;
   let owner=G.owner,armies=G.st.map(a=>({f:a.f,c:a.c,n:a.n})),links=G.links||[],rv=null;
   if(UI.rp){rv=rpView();owner=rv.owner;armies=rv.armies;links=[]}
+  // fog of war
+  const vf=viewer(),vis=rv?rv.vis:visNow();
+  if(vis&&!rv)armies=armies.filter(a=>a.f===vf||vis[a.c]);
+  if(vis&&!rv)links=links.filter(([a,fa,b,fb])=>fa===vf||fb===vf||(vis[a]&&vis[b]));
+  let fd='';if(vis)M.cells.forEach((c,i)=>{if(!vis[i])fd+=`M${hexPts(c).replace(/ /g,'L')}Z`});R.fog.setAttribute('d',fd);
+  const marks=vis&&!rv&&vf>=0&&G.phase==='orders'?((G.seen&&G.seen[vf])||[]).filter(([h,f])=>!vis[h]&&G.players[f].alive).map(([c,f,n])=>({f,c,n,seen:true})):[];
   M.cells.forEach((c,i)=>{if(c.l)R.poly[i].style.fill=ownerFill(owner[i],c.c,M)});
   let d='';M.cells.forEach((c,i)=>{if(!c.l)return;for(let k=0;k<6;k++){const j=c.nb[k];if(j>i&&M.cells[j].l&&owner[j]!==owner[i])d+=edgeSeg(c,k)}});R.own.setAttribute('d',d);
   R.paths.innerHTML='';R.fx.innerHTML='';
@@ -1466,19 +1541,19 @@ function render(){
     armies=armies.map(a=>a.f===f?{...a,n:a.n-(sent[a.c]||0),wait:waitingAt(f,a.c)>0,sel:a.c===UI.sel,keep:true}:a);
     getDraft(f).forEach(o=>{arrow([o.from,...o.path],col,R.paths);armies.push({f,c:o.path[o.path.length-1],n:o.n,ghost:true})});
     armies=armies.filter(a=>a.n>0||a.sel);
-    if(UI.sel!=null&&canPlot()){const rr=reachFor(G,f,UI.sel,inBattle(f,UI.sel));rr.dist.forEach((v,h)=>{if(h!==UI.sel)rd+=`M${hexPts(M.cells[h]).replace(/ /g,'L')}Z`})}
+    if(UI.sel!=null&&canPlot()){const rr=reachFor(reachView(f),f,UI.sel,inBattle(f,UI.sel));rr.dist.forEach((v,h)=>{if(h!==UI.sel)rd+=`M${hexPts(M.cells[h]).replace(/ /g,'L')}Z`})}
     getBuilds(f).forEach(b=>{const c=M.cells[b.c];el('text',{x:c.x,y:c.y-8.4,class:'qb'},R.paths).textContent='＋'+b.n})
   }
   R.home.setAttribute('d',hd);R.reach.setAttribute('d',rd);
-  drawArmies(armies);
+  drawArmies(armies.concat(marks));
   // battles: ⚔ on hexes with more than one faction, and on borders where armies collided
   const fs={};armies.forEach(a=>{if(a.ghost||a.n<=0)return;(fs[a.c]=fs[a.c]||new Set()).add(a.f)});
   Object.entries(fs).forEach(([h,s])=>{if(s.size>1){const c=M.cells[h];el('text',{x:c.x,y:c.y-5.4,class:'clash'},R.fx).textContent='⚔'}});
   links.forEach(([a,fa,b,fb])=>{if(armiesAt(G,a,fa)>0&&armiesAt(G,b,fb)>0){const A=M.cells[a],Bc=M.cells[b];el('text',{x:(A.x+Bc.x)/2,y:(A.y+Bc.y)/2+1.6,class:'clash'},R.fx).textContent='⚔'}});
   if(rv){
-    (rv.fr.mv||[]).forEach(([a,b,f])=>arrow([a,b],pcol(f),R.paths));
-    (rv.fr.cross||[]).forEach(([a,fa,b,fb])=>{const A=M.cells[a],Bc=M.cells[b];el('text',{x:(A.x+Bc.x)/2,y:(A.y+Bc.y)/2+1.6,class:'clash'},R.fx).textContent='⚔'});
-    const k={};(rv.fr.hits||[]).forEach(([h,f,n])=>{const c=M.cells[h],j=k[h]=(k[h]||0)+1;el('text',{x:c.x+3.5,y:c.y-4-j*3.6,class:'loss',fill:pcol(f)},R.fx).textContent='−'+n});
+    (rv.fr.mv||[]).forEach(([a,b,f])=>{if(rv.sees(a)||rv.sees(b))arrow([a,b],pcol(f),R.paths)});
+    (rv.fr.cross||[]).filter(([a,fa,b])=>rv.sees(a)||rv.sees(b)).forEach(([a,fa,b,fb])=>{const A=M.cells[a],Bc=M.cells[b];el('text',{x:(A.x+Bc.x)/2,y:(A.y+Bc.y)/2+1.6,class:'clash'},R.fx).textContent='⚔'});
+    const k={};(rv.fr.hits||[]).forEach(([h,f,n])=>{if(!rv.sees(h))return;const c=M.cells[h],j=k[h]=(k[h]||0)+1;el('text',{x:c.x+3.5,y:c.y-4-j*3.6,class:'loss',fill:pcol(f)},R.fx).textContent='−'+n});
   }
   renderTop();renderPanel();
 }
@@ -1492,12 +1567,16 @@ function renderTop(){
 }
 function infoHTML(){
   const i=UI.info;if(i==null||!G)return'';const c=G.map.cells[i];
-  if(c.ft==='lane'){const us=G.st.filter(a=>a.c===i).map(a=>`${G.players[a.f].name}: ${a.n} arm${a.n>1?'ies':'y'}`);return`<div class="info"><b>Sea lane</b> · armies cross it freely and can wait here; it's never owned and pays nothing${us.length?'<br>'+esc(us.join(', ')):''}</div>`}
+  const vis=visNow(),vf=viewer(),hid=vis&&!vis[i];
+  const fogNote=hid?(()=>{const m=vf>=0&&G.phase==='orders'?((G.seen&&G.seen[vf])||[]).filter(([h,f])=>h===i&&G.players[f].alive):[];
+    return'<br><span class="rd">🌫 Out of sight'+(m.length?' · last seen here: '+esc(m.map(([h,f,n])=>`${G.players[f].name} ~${n}`).join(', '))+' (they may have moved)':'')+'</span>'})():'';
+  const armyList=()=>G.st.filter(a=>a.c===i&&(!vis||a.f===vf||vis[i])).map(a=>`${G.players[a.f].name}: ${a.n} arm${a.n>1?'ies':'y'}`);
+  if(c.ft==='lane'){const us=armyList();return`<div class="info"><b>Sea lane</b> · armies cross it freely and can wait here; it's never owned and pays nothing${us.length?'<br>'+esc(us.join(', ')):''}${fogNote}</div>`}
   if(!c.l)return`<div class="info">${c.ft==='lake'?'Lake — impassable':c.ft==='mtn'?'Mountains — impassable':'Ocean'}</div>`;
   const k=G.map.countries[c.c],o=G.owner[i],tags=[];
   if(G.map.factions.some(f=>f.cap===i))tags.push(`★ faction capital ($${INCOME.fcap} to its own faction, $${INCOME.cap} to anyone else)`);else if(c.cap>=0)tags.push(`● capital ($${INCOME.cap})`);else tags.push(`$${INCOME.hex}`);
-  const us=G.st.filter(a=>a.c===i).map(a=>`${G.players[a.f].name}: ${a.n} arm${a.n>1?'ies':'y'}`);
-  return`<div class="info"><b>${esc(k.name)}</b> · ${tags.join(' · ')} · ${o>=0?`held by <span style="color:${pcol(o)}">${esc(G.players[o].name)}</span>`:'<span style="color:#b9b3a3">neutral</span>'}${us.length?'<br>'+esc(us.join(', ')):''}</div>`;
+  const us=armyList();
+  return`<div class="info"><b>${esc(k.name)}</b> · ${tags.join(' · ')} · ${o>=0?`held by <span style="color:${pcol(o)}">${esc(G.players[o].name)}</span>`:'<span style="color:#b9b3a3">neutral</span>'}${us.length?'<br>'+esc(us.join(', ')):''}${fogNote}</div>`;
 }
 function cashHTML(f){
   const inc=incomeOf(G,f),q=queued(f),left=G.money[f]-q*ARMY_COST;
@@ -1508,7 +1587,7 @@ function renderPanel(){
   if(UI.rp){
     const r=G.replay,n=r.frames.length,i=UI.rp.i,v=rpView();
     h=`<div class="msg">Turn ${r.turn} replay <span class="rd">· ${i+1} of ${n}</span></div>
-    <div class="sub rpt">${rpText(v.fr)}</div>
+    <div class="sub rpt">${rpText(v)}</div>
     <div class="row rp"><button data-act="rpStart">⏮</button><button data-act="rpPrev">◀</button><button class="primary" data-act="rpPlay">${UI.rp.playing?'⏸':'▶'}</button><button data-act="rpNext">▶|</button><button data-act="rpEnd">⏭</button></div>
     <div class="row"><button data-act="rpClose">Close replay</button></div>`;
   }else if(G.phase==='over'){
@@ -1519,6 +1598,7 @@ function renderPanel(){
     const wait=G.players.map((p,f)=>p.alive&&!G.submitted[f]?f:-1).filter(f=>f>=0);
     h=`<div class="msg">${G.phase==='place'?'Placing armies':'Turn '+G.turn} — waiting for ${wait.map(f=>`<b style="color:${pcol(f)}">${esc(G.players[f].name)}</b>`).join(', ')}</div>${infoHTML()}
     <div class="row"><button data-act="share">Invite link</button>${G.replay?'<button data-act="replay">Watch last turn</button>':''}</div>
+    ${viewer()===-1?'<div class="sub">🌫 Fog of war: armies stay hidden until you take a seat.</div>':''}
     ${mySeats().length?'':'<div class="row"><button class="primary" data-act="seats">Pick a seat</button></div>'}`;
   }else{
     const f=UI.as,mine=mySeats().filter(x=>G.players[x].alive);
@@ -1555,7 +1635,7 @@ function showOverlay(html,cls,name){const o=$('overlay');o.className=cls||'';o.i
 function hideOverlay(){const o=$('overlay');o.className='hidden';o.innerHTML='';UI.ov=null;afterSync()}
 const logLine=e=>`<div class="ll"><span class="r">T${e.t}</span><span class="dot" style="background:${pcol(e.f)}"></span><span>${esc(e.m)}</span></div>`;
 function openReplayPrompt(){
-  const r=G.replay,ev=G.log.filter(e=>e.t===r.turn);
+  const r=G.replay,ev=G.log.filter(e=>e.t===r.turn&&logOK(e));
   showOverlay(`<div class="sheet"><div class="sh-h"><h2>Turn ${r.turn} has played out</h2><button class="ghost" data-act="skipReplay">✕</button></div>
   ${ev.length?`<div class="log">${ev.map(logLine).join('')}</div>`:'<p class="sub">Nothing much happened.</p>'}
   <div class="row"><button data-act="skipReplay">Skip</button><button class="primary" data-act="replay">▶ Watch replay</button></div></div>`,'','rprompt');
@@ -1572,7 +1652,8 @@ function openBuild(){
   ${rows}<div class="row"><button class="primary" data-act="closeOv">Done</button></div></div>`,'','build');
 }
 function openMenu(){
-  const pl=G.players.map((p,i)=>`<div class="prow ${p.alive?'':'out'}"><span class="dot" style="background:${pcol(i)}"></span><span class="pn">${esc(p.name)} ${p.uid===ME?'<span class="me">YOU</span>':p.ai?'🤖':p.uid?'':'<span class="rd">(open seat)</span>'}</span><span class="pm">${landCount(G,i)} hexes · ${armyCount(G,i)} armies</span></div>`).join('');
+  const fv=viewer(),ac=i=>fv!=null&&i!==fv?'?':armyCount(G,i);
+  const pl=G.players.map((p,i)=>`<div class="prow ${p.alive?'':'out'}"><span class="dot" style="background:${pcol(i)}"></span><span class="pn">${esc(p.name)} ${p.uid===ME?'<span class="me">YOU</span>':p.ai?'🤖':p.uid?'':'<span class="rd">(open seat)</span>'}</span><span class="pm">${landCount(G,i)} hexes · ${ac(i)} armies</span></div>`).join('');
   const cs=G.map.countries.map(k=>{const held=G.owner[k.cap];return`<div class="crow"><span class="sw" style="background:${pcol(k.f)}"></span><span class="cn">${esc(k.name)}</span><span class="cm">${k.f<0?'neutral':k.L?'home':'small'} · ${k.n} hexes · capital held by</span><span class="dot" style="background:${pcol(held)}"></span></div>`}).join('');
   const open=G.players.some(p=>!p.uid);
   const vf=UI.as!=null?UI.as:mySeats()[0];
@@ -1591,12 +1672,13 @@ function openMenu(){
   <p class="sub"><b>Moving:</b> every army can move every turn, up to ${MOVE} hexes through your own land. Entering a hex you don't own ends the move, so each army takes at most one new hex a turn. Tap an army, choose how many to send, then tap where they go.</p>
   <p class="sub"><b>Battles:</b> armies that end up in the same hex as an enemy fight ${ROUNDS} rounds of Risk dice each turn. Whoever held the hex at the start of the turn defends: up to 2 dice and wins ties. Attackers roll up to 3. In neutral land, and when armies cross paths on a border, both roll up to 3 and a tie costs both an army. With three factions, everyone rolls against everyone. Battles carry on next turn; armies in battle can hold, be reinforced, or retreat 1 hex into your own land or an empty sea lane.</p>
   <p class="sub"><b>Sea lanes:</b> the dotted blue routes across the water. Armies cross them freely (they don't end a move) and can stop on them; long lanes take more than one turn. Sea lanes are never owned, and battles at sea are always meeting battles.</p>
+  ${G.fog?`<p class="sub"><b>Fog of war:</b> you see the land you own, every hex next to it, and every hex within ${SIGHT} hexes of your armies. Hexes out of sight are shaded darker; who owns them is still shown, but enemy armies there are hidden, and so are battles between other players. If you lose sight of enemy armies, a faded <b>~</b> marker shows where you last saw them, for one turn. Other players' money and army totals are secret.</p>`:''}
   <p class="sub"><b>Money:</b> $${INCOME.hex} per hex, $${INCOME.cap} per capital, $${INCOME.fcap} for your ★ capital, every turn. Armies cost $${ARMY_COST}; recruit them at any capital you hold.</p>
   <p class="sub"><b>Land:</b> a hex with only your armies in it becomes yours. Land completely surrounded by one enemy switches to them at the end of the turn (not capitals, and not if armies are inside). Lose your ★ capital and you're out. After turn ${MAX_TURNS}, most land wins.</p>
   <h3>Map key</h3>
-  <p class="sub">★ faction capital · ● country capital · black hexes: mountains · light blue: lakes (both impassable) · dotted blue: sea lanes · the number on a token is how many armies are there · gold outline: armies waiting for orders · ⚔ battle · on the score bar, ✓ orders in, … still planning, 🤖 computer.</p>
+  <p class="sub">★ faction capital · ● country capital · black hexes: mountains · light blue: lakes (both impassable) · dotted blue: sea lanes · the number on a token is how many armies are there · gold outline: armies waiting for orders · ⚔ battle${G.fog?' · darker hexes: out of sight · faded ~ token: enemy armies last seen there':''} · on the score bar, ✓ orders in, … still planning, 🤖 computer.</p>
   <h3>Countries</h3>${cs}
-  <h3>War log</h3><div class="log">${G.log.slice(-80).reverse().map(logLine).join('')}</div>
+  <h3>War log</h3><div class="log">${G.log.filter(logOK).slice(-80).reverse().map(logLine).join('')}</div>
   <div class="row"><button data-act="home">All my games</button><button data-act="openSetup">New game</button></div>
   <div class="row"><button class="primary" data-act="closeOv">Close</button></div></div>`,'','menu');
 }

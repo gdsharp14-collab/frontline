@@ -1,8 +1,8 @@
 # Warsea Conquest — Game Rules
 
-*Last updated: November 18, 2026 · Matches game version **v0.5.0***
+*Last updated: November 18, 2026 · Matches game version **v0.6.0***
 
-This file describes the game as it's actually built, plus ideas that aren't built yet (section 10).
+This file describes the game as it's actually built, plus ideas that aren't built yet (section 11).
 
 ---
 
@@ -15,11 +15,13 @@ This file describes the game as it's actually built, plus ideas that aren't buil
 ## 2. The map
 **Choosing a map:** when creating a game, pick one of three **named maps** or **🎲 Random**.
 
-| Named map | What it's like | Balance (200 computer games) |
+| Named map | What it's like | Wins in 400 computer games with fog (Red · Blue · Green) |
 |---|---|---|
-| **Symmetric** | Three identical positions (each faction's corner is the same map turned 120°) | Red 35% · Blue 35% · Green 30% wins; games are usually decided by land after turn 50, not by eliminations |
-| **Archipelago** | Every country is an island, linked by short sea lanes | Red 35% · Blue 29% · Green 36% |
-| **Continental** | One big landmass with lakes and mountains, no sea lanes | Red 35% · Blue 29% · Green 37% |
+| **Symmetric** | Three identical positions (each faction's corner is the same map turned 120°) | 33% · 32% · 36%; games are usually decided by land after turn 50, not by eliminations |
+| **Archipelago** | Every country is an island, linked by short sea lanes | 26% · **51%** · 23%: **with fog, this map favours Blue** (see the v0.6.0 notes in the changelog) |
+| **Continental** | One big landmass with lakes and mountains, no sea lanes | 37% · 24% · 39% |
+
+These are computer-player results; people may find different advantages.
 
 **Random maps** come in several styles: Classic, Continents, Archipelago, Mixed, Inland Sea, Symmetric and Symmetric Isles, sometimes with long routes round the outside. **Random maps often favour one colour:** in testing, on a typical random map one position won about two thirds of the games.
 
@@ -71,7 +73,20 @@ Battles use Risk dice: each side rolls, the highest dice are compared, then the 
 - A hex with only your armies in it becomes yours.
 - **Encirclement:** at the end of the turn, a group of hexes switches to an enemy if every **land** hex around it belongs to that one enemy. Ocean, lakes, mountains and sea lanes count as walls. It doesn't switch if any armies are inside, and capitals never switch this way. This applies to neutral land too.
 
-## 8. Money and recruiting
+## 8. Fog of war
+*(Since v0.6.0. Games started before v0.6.0 have no fog.)*
+- **What you can see:** every hex you own, every hex next to your land, and every hex within **2 hexes of any of your armies** (including armies on sea lanes).
+- **Hexes out of sight are shaded darker.** The map and who owns each hex are always visible.
+- **Hidden in fog:** enemy armies, and battles between other factions. Your own battles are always shown.
+- **Secret:** other players' money, recruiting and army totals (the menu shows "?"). New enemy armies show only if they appear somewhere you can see.
+- **Replay and war log** only show what you saw. In the replay, what you can see changes step by step as armies move.
+- **Last-seen markers:** if enemy armies were on a hex and you lose sight of that hex, a faded token like **~6** stays there showing what you last saw, **for one turn**. There's no marker if you watched the armies move away. Tap the hex to see who it was.
+- **Moving into fog:** entering a hex with enemy armies still ends your move and starts a battle, whether you could see them or not. Highlighted hexes for a move only take account of armies you can see.
+- **Computer players** see only what a human in their seat would see, including last-seen markers.
+- **Watchers** (on the game link without a seat) see no armies until the game ends. **When the game is over**, or once all your seats are out, you see everything.
+- **How hidden it is:** the game just doesn't draw what you shouldn't see. The whole game is still downloaded to every phone, so someone technical could dig it out.
+
+## 9. Money and recruiting
 **Income per turn:**
 
 | You own | You get |
@@ -84,23 +99,25 @@ Battles use Risk dice: each side rolls, the highest dice are compared, then the 
 - **Armies cost $10.** Recruit as many as you can afford, at **any capital you hold**, even if you don't hold the rest of that country. Spread them across capitals however you like.
 - New armies appear on their capital at the end of the turn, if you still hold it. They're paid for before that turn's income arrives.
 
-## 9. Computer players
+## 10. Computer players
 - Pick **Opponents: 🤖 Computer** when creating a game, or use **☰ Menu → Computer plays open seats** in a friends game. A human can take a seat back with **Pick a seat → Take over**.
 - **Computer player v2** (since v0.5.0) plans each turn as a whole: it estimates where enemy armies could strike next turn, keeps enough armies on its capitals, pools armies from several stacks into attacks it expects to win, grabs land with single armies, crosses sea lanes, and marches spare armies toward the front over several turns. It varies its choices a little from game to game.
 - In testing it beat two copies of the old computer player 59% of the time. Games between three v2 players usually see one faction eliminated.
+- **With fog (since v0.6.0)** it plans only with the armies it can see, plus its last-seen markers.
 
 ---
 
-## 10. Ideas not built yet
+## 11. Ideas not built yet
 From my original design. To be reviewed; some may be dropped.
 
 - **Supply lines:** income only from land connected to your capital. *(Removed for now; to revisit.)*
 - **Naval units:** battleships (blockade ports), submarines (attack sea routes), aircraft carriers.
 - **Air power:** airfields; fighters, bombers and close air support.
 - **Guerrillas and secret police.**
-- **Fog of war:** seeing only enemy armies near your land. *May need code on a server; I don't know yet if free Firebase allows it.*
+- **Fog of war, true secrecy:** fog is built (section 8) but only hides things on screen. Hiding them properly would need code on a server (Firebase Cloud Functions, which need the paid Blaze plan with a payment method on file).
+- **Recon:** different sight ranges for different units, or technology that improves sight.
 - **Technology:** research paid with money.
 - **"Your turn" notifications.**
 
-## 11. Open decisions
+## 12. Open decisions
 See "Open questions for future stages" in the project outline, which also explains why each current rule was chosen.

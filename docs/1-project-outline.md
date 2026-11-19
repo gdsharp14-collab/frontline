@@ -1,6 +1,6 @@
 # Warsea Conquest — Project Outline
 
-*Last updated: November 18, 2026 · Current version: **v0.5.0** (live)*
+*Last updated: November 18, 2026 · Current version: **v0.6.0** (live)*
 
 ## What this is
 A WWII-era hex strategy wargame for me and 2 friends to play on our **Android phones**, from different places. Everyone submits orders, then the turn plays out for all three at once. Turns happen whenever we're all ready.
@@ -45,15 +45,17 @@ Each version's GitHub code is recorded in the changelog, and the version number 
 | 1. Simplify the rules | Cut the rules down to what's fun and playable on a phone | **Done** (v0.4.0, Nov 12) |
 | 2. Go live | Play the game for real on our phones. Fix what breaks | **Milestone reached** (Nov 14): v0.4.0 plays well and follows all the agreed rules |
 | 2b. Map-making | Sea lanes, new map styles, balanced named maps, a stronger computer player | **Done** (v0.5.0, Nov 18) |
+| 2c. Fog of war | Hide enemy armies you can't see; last-seen markers; computer player limited to its own sight | **Done** (v0.6.0, Nov 18) |
 | 3. Tune → v1.0 | Adjust the numbers (battle rounds, starting armies, costs, income) after real games | Not started |
 | 4. Add-ons, one at a time | Each one played before the next starts. Likely order: "your turn" notifications, ships, aircraft, technology | Not started |
 
-Fog of war and hidden units are parked until we know whether they're possible: they may need code on a server, and I don't know whether the free Firebase plan allows that.
+Fog of war is built as display-only fog (v0.6.0). True secrecy would need code on a server (Firebase Cloud Functions, which need the paid Blaze plan); that's parked. Guerrillas and other hidden units are parked too.
 
 ## Status (Nov 18, 2026)
-- **v0.5.0 is live:** sea lanes, three named maps (Symmetric, Archipelago, Continental) plus random maps, and computer player v2.
-- v0.4.0 was confirmed playable on Nov 14; v0.5.0 hasn't been played on real phones yet.
-- **Next:** play v0.5.0, then the open questions below.
+- **v0.6.0 is live:** fog of war, on top of v0.5.0's sea lanes, three named maps (Symmetric, Archipelago, Continental) plus random maps, and computer player v2.
+- v0.4.0 was confirmed playable on Nov 14; v0.5.0 and v0.6.0 haven't been played on real phones yet.
+- **With fog, the Archipelago map favours Blue** in computer games (about 50% of wins). See open questions.
+- **Next:** play v0.6.0, then the open questions below.
 
 ## Progress so far
 | Date | What happened |
@@ -63,7 +65,7 @@ Fog of war and hidden units are parked until we know whether they're possible: t
 | Nov 12, 2026 | Stepped back to simplify. Reorganized the project (GitHub as the master copy, three docs, version numbers). Agreed a much simpler, Risk-style rule set and built it as v0.4.0 |
 | Nov 14, 2026 | Played v0.4.0 and confirmed it works: first milestone reached |
 | Nov 16, 2026 | Map-making: sea lanes, new map styles, computer player v2, and 36,000 simulated games to find balanced maps |
-| Nov 18, 2026 | Picked three named maps and released v0.5.0 |
+| Nov 18, 2026 | Picked three named maps and released v0.5.0. Agreed and built fog of war (v0.6.0) |
 
 ## Key decisions so far, and why
 **How the project is run (Nov 12)**
@@ -97,6 +99,13 @@ The goal: **keep the simplicity of Risk, which my friends and I enjoy, but add a
 - **Random maps are usually unfair** (one position wins about two thirds of the time), so the game offers **three tested named maps**. Random maps stay as an option.
 - **Computer player v2:** needed so the simulations (and solo games) mean something; it's clearly stronger than the old one.
 
+**Fog of war (Nov 18, built as v0.6.0)**
+- **Display-only fog:** the game just doesn't draw what you shouldn't see. It's free and keeps the current setup. Someone technical could still dig hidden information out of their phone's browser, which is fine among three friends. True secrecy would need a server to play out each turn (Firebase Cloud Functions, on the paid Blaze plan) and a big rewrite.
+- **Ownership stays visible; out-of-sight hexes are shaded.** Hiding territory as well would be confusing on a phone.
+- **Armies see further than empty land** (2 hexes, versus 1 from your land), so having an army somewhere is worth more than just owning it.
+- **Last-seen markers last one turn, with no turn number**, and only for armies you lost sight of, not ones you watched leave (my rule).
+- **The computer player plays by the same rules**, so it can't cheat.
+
 **The order screen (Nov 12)**
 - Because every army can now move each turn, the screen shows what's left to do: gold outlines on armies waiting for orders, a **Next ▶** button, − / + / All for splitting, and a Submit button that says how many armies aren't moving.
 
@@ -105,7 +114,9 @@ The goal: **keep the simplicity of Risk, which my friends and I enjoy, but add a
 - **Numbers:** are 10 starting armies, $10 per army and the income rates right?
 - **Supply lines:** bring them back in some form?
 - **Terrain and more unit types:** bring any back later?
-- **The ideas list** in the game rules doc (section 10): naval units, air power, guerrillas, fog of war, technology, "your turn" notifications.
+- **The ideas list** in the game rules doc (section 11): naval units, air power, guerrillas, true fog secrecy, recon, technology, "your turn" notifications.
+- **Archipelago with fog:** in 400 computer games with fog, Blue won 51% (Red 26%, Green 23%); Green is eliminated far more often. The version with long routes round the outside was no better (52% Blue). Options: keep it and see how it plays with people, or re-run the map search with fog on and pick a new Archipelago.
+- **Named-map balance shifts on re-testing:** fresh 400-game runs without fog gave Continental 41/22/37 and Archipelago 40/25/36, less even than the 200-game results they were picked on. Picking the best of 179 maps favours ones that were partly lucky. Future map searches should re-test the finalists with more games.
 - **Symmetric map:** fair, but in testing almost no one gets eliminated; games are decided by land at turn 50. Keep it, or look for a more decisive symmetrical map?
 - **More named maps:** the simulation tool on the `v0.5-dev` branch can test new candidates whenever we want more.
 - **Computer player:** v2 is much better than v1, but people may still find weaknesses (and map advantages it misses).
